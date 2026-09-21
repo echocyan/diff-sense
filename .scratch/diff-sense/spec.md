@@ -66,6 +66,8 @@ The system is split into two layers:
 - **Package manager**: pnpm
 - **LLM framework**: Vercel AI SDK (`ai`, `@ai-sdk/anthropic`, `@ai-sdk/openai`, etc.)
 - **CLI framework**: Commander.js
+- **Terminal interaction**: @clack/prompts (interactive wizard + spinner)
+- **Terminal colors**: picocolors
 - **Build tool**: tsup (single-file bundle)
 - **Test framework**: Vitest
 - **Concurrency**: `p-limit` for parallel group review (default concurrency: 4)
@@ -180,17 +182,33 @@ The `existing_code` field from `code_comment` is matched to precise line numbers
 
 ### Project Structure (single package)
 
-Modules under `src/`:
+```
+src/
+├── index.ts            # CLI 入口（Commander.js 注册）
+├── review.ts           # 核心审查编排（测试接缝）
+├── types.ts            # 共享类型（Finding, DiffEntry, Rule, Group, Config）
+├── commands/           # CLI 命令处理器
+│   ├── review.ts
+│   ├── config.ts
+│   └── version.ts
+├── config.ts           # 配置加载（env + file）+ 提供商注册表
+├── diff.ts             # Diff 解析（workspace / commit / range）
+├── filter.ts           # 文件过滤器（4 道门）
+├── grouping.ts         # 语义分组（LLM 调用）
+├── anchor.ts           # 行号锚定（3 步）
+├── rules/              # 规则系统
+│   ├── matcher.ts      # glob 匹配 + 规则解析
+│   └── builtin.ts      # 内置规则定义
+├── agent/              # Agent 层
+│   ├── loop.ts         # ToolLoopAgent 配置 + 执行
+│   ├── tools.ts        # 工具定义（code_comment / file_read / code_search / task_done）
+│   └── prompts.ts      # grouping + review prompt 模板
+└── output/             # 输出格式化
+    ├── text.ts         # text 格式
+    └── json.ts         # JSON 格式
+```
 
-- **cli** — Commander.js command definitions, argument parsing, output rendering
-- **config** — configuration loading (env vars + config file), provider registry setup
-- **diff** — git diff parsing, three diff modes (workspace/commit/range)
-- **filter** — file filter pipeline (4 gates)
-- **rules** — rule loading, glob matching, built-in rule content
-- **grouping** — semantic grouping via LLM call
-- **agent** — ToolLoopAgent setup, tool definitions, prompt building, comment collection
-- **anchor** — line number anchoring (3-step algorithm)
-- **output** — text and JSON formatters
+Tests co-located with source: `*.test.ts` alongside the module they test.
 
 ## Testing Decisions
 
