@@ -39,9 +39,9 @@ diff-sense v1 的所有设计决策已落定——架构、模块划分、CLI �
 - **code_comment schema**：severity 结构化字段（high/medium/low）、existing_code 必填、包含 suggestion_code
 - **业务上下文**：包含 `--background` 标志
 - **测试**：确定性层 + Mock LLM，框架 Vitest
-- [OCR Prompt 模板分析](.scratch/diff-sense-v1/issues/01-ocr-prompt-templates.md)：OCR 用 XML 标签包裹 diff，元数据与内容分离，code_comment 批量数组 + 4 级严重度 + 8 个分类。diff-sense 采用同样模式。详见 `docs/research/ocr-prompt-templates.md`
-- [AI SDK Agent Loop 模式](.scratch/diff-sense-v1/issues/02-ai-sdk-agent-loop.md)：使用 ToolLoopAgent + stopWhen 组合式终止条件（hasToolCall('task_done') + isStepCount(30)），createProviderRegistry 多提供商，agent.generate() 非流式 + 生命周期回调。详见 `docs/research/ai-sdk-agent-loop.md`
-- [OCR 内置规则分析](.scratch/diff-sense-v1/issues/03-ocr-builtin-rules.md)：OCR 48 个 glob 映射 + 52 个语言特定检查清单。diff-sense v1 覆盖 TS/JS、Python、Go、Java、Rust、Dockerfile、GitHub Actions YAML + 默认规则。详见 `docs/research/ocr-builtin-rules.md`
+- [OCR Prompt 模板分析](.scratch/diff-sense/issues/01-ocr-prompt-templates.md)：OCR 用 XML 标签包裹 diff，元数据与内容分离，code_comment 批量数组 + 4 级严重度 + 8 个分类。diff-sense 采用同样模式。详见 `docs/research/ocr-prompt-templates.md`
+- [AI SDK Agent Loop 模式](.scratch/diff-sense/issues/02-ai-sdk-agent-loop.md)：使用 ToolLoopAgent + stopWhen 组合式终止条件（hasToolCall('task_done') + isStepCount(30)），createProviderRegistry 多提供商，agent.generate() 非流式 + 生命周期回调。详见 `docs/research/ai-sdk-agent-loop.md`
+- [OCR 内置规则分析](.scratch/diff-sense/issues/03-ocr-builtin-rules.md)：OCR 48 个 glob 映射 + 52 个语言特定检查清单。diff-sense v1 覆盖 TS/JS、Python、Go、Java、Rust、Dockerfile、GitHub Actions YAML + 默认规则。详见 `docs/research/ocr-builtin-rules.md`
 
 ## Not yet specified
 

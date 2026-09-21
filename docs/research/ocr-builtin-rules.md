@@ -1,6 +1,6 @@
 # OCR Built-in Rules Analysis
 
-> Research for: `.scratch/diff-sense-v1/issues/03-ocr-builtin-rules.md`
+> Research for: `.scratch/diff-sense/issues/03-ocr-builtin-rules.md`
 > Date: 2026-09-21
 > Primary sources: alibaba/open-code-review repository (source code + official docs)
 
