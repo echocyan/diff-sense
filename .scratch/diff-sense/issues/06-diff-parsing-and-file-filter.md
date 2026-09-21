@@ -4,12 +4,12 @@
 
 **Blocked by:** 05 (最小审查流水线)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Commit 模式 diff 解析：`git diff <sha>~1 <sha>` 或 `git show <sha>`
-- [ ] Range 模式 diff 解析：`git diff <from> <to>`
-- [ ] `--commit` 和 `--from`/`--to` CLI 标志接入 review 命令
-- [ ] 敏感路径排除门：.env、密钥文件、证书等模式
-- [ ] 用户排除门：`--exclude` CLI 标志 + 配置文件中的 exclude 模式
-- [ ] 扩展名白名单门：仅放行代码文件扩展名
-- [ ] 单元测试：三种 diff 模式的解析、四道门各自的过滤逻辑
+- [x] Commit 模式 diff 解析：`git diff <sha>~1 <sha>` 或 `git show <sha>`
+- [x] Range 模式 diff 解析：`git diff <from> <to>`
+- [x] `--commit` 和 `--from`/`--to` CLI 标志接入 review 命令
+- [x] 敏感路径排除门：.env、密钥文件、证书等模式
+- [x] 用户排除门：`--exclude` CLI 标志 + 配置文件中的 exclude 模式
+- [x] 扩展名白名单门：仅放行代码文件扩展名
+- [x] 单元测试：三种 diff 模式的解析、四道门各自的过滤逻辑
