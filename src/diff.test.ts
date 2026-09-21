@@ -116,6 +116,18 @@ describe("getCommitDiff", () => {
     const entries = await getCommitDiff("abc123", "/tmp/repo");
     expect(entries).toEqual([]);
   });
+
+  it("初始提交时回退到 git show", async () => {
+    mockExec.mockRejectedValueOnce(new Error("unknown revision abc123~1"));
+    mockExec.mockResolvedValueOnce({ stdout: SAMPLE_DIFF, stderr: "" });
+    const entries = await getCommitDiff("abc123", "/tmp/repo");
+    expect(mockExec).toHaveBeenCalledWith(
+      "git",
+      ["show", "abc123", "--format=", "--unified=3"],
+      expect.objectContaining({ cwd: "/tmp/repo" }),
+    );
+    expect(entries).toHaveLength(2);
+  });
 });
 
 describe("getRangeDiff", () => {

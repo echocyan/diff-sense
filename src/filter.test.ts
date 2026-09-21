@@ -1,4 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { mkdir, writeFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { filterFiles, isSensitivePath, matchesUserExclude, isCodeFile } from "./filter.js";
 import type { DiffEntry } from "./types.js";
 
@@ -59,6 +62,56 @@ describe("filterFiles", () => {
     ]);
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe("src/app.ts");
+  });
+
+  describe("配置文件排除", () => {
+    let testDir: string;
+
+    beforeEach(async () => {
+      testDir = join(tmpdir(), `diff-sense-test-${Date.now()}`);
+      await mkdir(join(testDir, ".diff-sense"), { recursive: true });
+    });
+
+    afterEach(async () => {
+      await rm(testDir, { recursive: true, force: true });
+    });
+
+    it("读取 .diff-sense/rules.json 中的 exclude 模式", async () => {
+      await writeFile(
+        join(testDir, ".diff-sense/rules.json"),
+        JSON.stringify({ exclude: ["vendor/**"] }),
+      );
+      const result = await filterFiles(
+        [entry({ path: "src/app.ts" }), entry({ path: "vendor/lib.js" })],
+        { cwd: testDir },
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].path).toBe("src/app.ts");
+    });
+
+    it("配置文件不存在时不报错", async () => {
+      const result = await filterFiles([entry({ path: "src/app.ts" })], {
+        cwd: testDir + "/nonexistent",
+      });
+      expect(result).toHaveLength(1);
+    });
+
+    it("配置文件与 CLI --exclude 合并生效", async () => {
+      await writeFile(
+        join(testDir, ".diff-sense/rules.json"),
+        JSON.stringify({ exclude: ["vendor/**"] }),
+      );
+      const result = await filterFiles(
+        [
+          entry({ path: "src/app.ts" }),
+          entry({ path: "vendor/lib.js" }),
+          entry({ path: "docs/readme.md" }),
+        ],
+        { cwd: testDir, excludePatterns: ["docs/**"] },
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].path).toBe("src/app.ts");
+    });
   });
 
   it("四道门综合过滤", async () => {

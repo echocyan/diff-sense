@@ -35,14 +35,23 @@ export async function getWorkspaceDiff(cwd: string): Promise<DiffEntry[]> {
   return parseDiff(combined);
 }
 
-/** 获取单个提交的 diff */
+/** 获取单个提交的 diff，初始提交时回退到 git show */
 export async function getCommitDiff(sha: string, cwd: string): Promise<DiffEntry[]> {
-  const { stdout } = await exec("git", ["diff", `${sha}~1`, sha, "--unified=3"], {
-    cwd,
-    maxBuffer: GIT_MAX_BUFFER,
-  });
-  if (!stdout.trim()) return [];
-  return parseDiff(stdout);
+  try {
+    const { stdout } = await exec("git", ["diff", `${sha}~1`, sha, "--unified=3"], {
+      cwd,
+      maxBuffer: GIT_MAX_BUFFER,
+    });
+    if (!stdout.trim()) return [];
+    return parseDiff(stdout);
+  } catch {
+    const { stdout } = await exec("git", ["show", sha, "--format=", "--unified=3"], {
+      cwd,
+      maxBuffer: GIT_MAX_BUFFER,
+    });
+    if (!stdout.trim()) return [];
+    return parseDiff(stdout);
+  }
 }
 
 /** 获取两个引用之间的 diff */
