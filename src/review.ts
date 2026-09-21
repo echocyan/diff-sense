@@ -4,12 +4,19 @@ import { getDiff, type DiffMode } from "./diff";
 import { filterFiles, type FilterOptions } from "./filter";
 import { runReviewAgent } from "./agent/loop";
 
+/** 审查编排选项 */
 export interface ReviewOptions {
+  /** LLM 模型实例 */
   model: LanguageModel;
+  /** 项目根目录 */
   cwd: string;
+  /** diff 获取模式，默认 workspace */
   diffMode?: DiffMode;
+  /** 业务上下文，传入 Agent 的用户提示词 */
   background?: string;
+  /** 用户排除模式（CLI --exclude） */
   excludePatterns?: string[];
+  /** 每个 Agent 步骤结束时的回调（用于更新 spinner） */
   onStepEnd?: (info: { stepNumber: number }) => void;
 }
 

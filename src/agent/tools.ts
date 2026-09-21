@@ -8,6 +8,7 @@ import type { Finding } from "../types";
 
 const exec = promisify(execFile);
 
+/** 创建审查 Agent 的四个工具：code_comment / file_read / code_search / task_done */
 export function createTools(cwd: string, findings: Finding[]): ToolSet {
   return {
     code_comment: tool({
@@ -42,6 +43,7 @@ export function createTools(cwd: string, findings: Finding[]): ToolSet {
       execute: async ({ path: filePath }) => {
         try {
           const content = await readFile(join(cwd, filePath), "utf-8");
+          // 截断过长文件，防止单文件占满 LLM 上下文窗口
           if (content.length > 50_000) {
             return content.slice(0, 50_000) + "\n... (truncated)";
           }
@@ -64,6 +66,7 @@ export function createTools(cwd: string, findings: Finding[]): ToolSet {
           if (file_pattern) args.push("--", file_pattern);
           const { stdout } = await exec("git", args, { cwd, maxBuffer: 1024 * 1024 });
           const lines = stdout.split("\n").filter(Boolean);
+          // 限制搜索结果行数，避免输出过长
           if (lines.length > 50) {
             return lines.slice(0, 50).join("\n") + `\n... (${lines.length} total matches)`;
           }
@@ -74,6 +77,7 @@ export function createTools(cwd: string, findings: Finding[]): ToolSet {
       },
     }),
 
+    // 信号工具：无 execute 实现，ToolLoopAgent 通过 hasToolCall("task_done") 检测到调用后终止循环
     task_done: tool({
       description: "Signal that the review is complete",
       inputSchema: z.object({

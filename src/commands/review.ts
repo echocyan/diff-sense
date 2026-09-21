@@ -5,6 +5,7 @@ import { review } from "../review";
 import { formatText } from "../output/text";
 import type { DiffMode } from "../diff";
 
+/** review 子命令的 CLI 选项 */
 interface ReviewCliOptions {
   background?: string;
   commit?: string;
@@ -13,6 +14,7 @@ interface ReviewCliOptions {
   exclude?: string[];
 }
 
+/** 注册 review 子命令到 Commander 程序 */
 export function registerReviewCommand(program: Command) {
   program
     .command("review")
@@ -52,6 +54,7 @@ export function registerReviewCommand(program: Command) {
     });
 }
 
+/** 从 CLI 选项解析 diff 模式，校验 --commit 与 --from/--to 的互斥关系 */
 function resolveDiffMode(opts: ReviewCliOptions): DiffMode {
   if (opts.commit) {
     if (opts.from || opts.to) {

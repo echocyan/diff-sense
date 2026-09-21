@@ -1,5 +1,6 @@
 import type { DiffEntry } from "../types";
 
+/** 构建审查 Agent 的系统提示词 */
 export function buildSystemPrompt(): string {
   return `You are a senior code reviewer. Your job is to review code changes and find real defects.
 
@@ -18,7 +19,9 @@ Rules:
 - When done reviewing all files, call task_done with a summary`;
 }
 
+/** 构建用户提示词，将 diff 条目包装为 XML 结构化格式供 LLM 解析 */
 export function buildUserPrompt(entries: DiffEntry[], background?: string): string {
+  // 每个文件的 diff 包装为 <file path="..."> 标签，便于 LLM 按文件定位
   const fileBlocks = entries.map((e) => `<file path="${e.path}">\n${e.diff}\n</file>`).join("\n\n");
 
   const parts = [`<review_files>\n${fileBlocks}\n</review_files>`];

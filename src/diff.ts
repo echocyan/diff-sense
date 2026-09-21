@@ -3,8 +3,10 @@ import { promisify } from "node:util";
 import type { DiffEntry } from "./types";
 
 const exec = promisify(execFile);
+// git diff 输出缓冲区上限 10 MB，超大仓库可能需要调大
 const GIT_MAX_BUFFER = 10 * 1024 * 1024;
 
+/** diff 获取模式：工作区 / 单次提交 / 两个引用之间的范围 */
 export type DiffMode =
   | { type: "workspace" }
   | { type: "commit"; sha: string }
@@ -45,6 +47,7 @@ export async function getCommitDiff(sha: string, cwd: string): Promise<DiffEntry
     if (!stdout.trim()) return [];
     return parseDiff(stdout);
   } catch {
+    // 初始提交没有父提交，sha~1 会报错，回退到 git show
     const { stdout } = await exec("git", ["show", sha, "--format=", "--unified=3"], {
       cwd,
       maxBuffer: GIT_MAX_BUFFER,
@@ -67,20 +70,24 @@ export async function getRangeDiff(from: string, to: string, cwd: string): Promi
 /** 解析 unified diff 为结构化对象 */
 export function parseDiff(raw: string): DiffEntry[] {
   const entries: DiffEntry[] = [];
+  // 按 "diff --git " 分割，每个块对应一个文件的 diff
   const fileDiffs = raw.split(/^diff --git /m).filter(Boolean);
 
   for (const chunk of fileDiffs) {
+    // 从 "a/path b/path" 头部提取文件路径，取 b/ 侧（变更后路径）
     const headerMatch = chunk.match(/^a\/(.+?) b\/(.+)/m);
     if (!headerMatch) continue;
 
     const pathB = headerMatch[2];
     const lines = chunk.split("\n");
 
+    // 通过 diff 元数据行判定文件状态：新增 / 删除 / 重命名 / 修改
     let status: DiffEntry["status"] = "modified";
     if (lines.some((l) => l.startsWith("new file mode"))) status = "added";
     else if (lines.some((l) => l.startsWith("deleted file mode"))) status = "deleted";
     else if (lines.some((l) => l.startsWith("rename from"))) status = "renamed";
 
+    // 统计增删行数，跳过 +++ / --- 文件标记行
     let insertions = 0;
     let deletions = 0;
     for (const line of lines) {

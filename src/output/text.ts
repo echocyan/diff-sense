@@ -1,12 +1,14 @@
 import pc from "picocolors";
 import type { Finding, ReviewResult } from "../types";
 
+/** 严重程度对应的终端彩色标签 */
 const SEVERITY_BADGE: Record<string, string> = {
   high: pc.bgRed(pc.white(" HIGH ")),
   medium: pc.bgYellow(pc.black(" MEDIUM ")),
   low: pc.bgBlue(pc.white(" LOW ")),
 };
 
+/** 将审查结果格式化为终端可读的彩色文本 */
 export function formatText(result: ReviewResult): string {
   const { findings } = result;
   if (findings.length === 0) {
@@ -46,6 +48,7 @@ export function formatText(result: ReviewResult): string {
   return parts.join("\n");
 }
 
+/** 按文件路径分组审查发现 */
 function groupByFile(findings: Finding[]): Map<string, Finding[]> {
   const map = new Map<string, Finding[]>();
   for (const f of findings) {

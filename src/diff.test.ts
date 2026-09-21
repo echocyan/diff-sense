@@ -89,6 +89,8 @@ describe("parseDiff", () => {
   });
 });
 
+// mock execFile 为 vi.fn()，并让 promisify 直接返回原函数
+// 这样源码中的 exec = promisify(execFile) 实际就是 mock 版 execFile
 vi.mock("node:child_process", () => ({
   execFile: vi.fn(),
 }));
@@ -97,6 +99,7 @@ vi.mock("node:util", () => ({
 }));
 
 const { execFile } = await import("node:child_process");
+// 双重类型断言：vi.mocked 的返回类型与 vi.fn() 不完全兼容，需要中转 unknown
 const mockExec = vi.mocked(execFile) as unknown as ReturnType<typeof vi.fn>;
 
 describe("getCommitDiff", () => {

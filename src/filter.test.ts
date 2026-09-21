@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { filterFiles, isSensitivePath, matchesUserExclude, isCodeFile } from "./filter";
 import type { DiffEntry } from "./types";
 
+/** 创建默认 DiffEntry，可通过 overrides 覆盖任意字段 */
 function entry(overrides: Partial<DiffEntry> = {}): DiffEntry {
   return {
     path: "src/test.ts",

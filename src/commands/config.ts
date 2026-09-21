@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 
+/** 注册 config 子命令（占位，待实现） */
 export function registerConfigCommand(program: Command) {
   program
     .command("config")

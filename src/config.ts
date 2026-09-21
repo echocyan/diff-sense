@@ -4,8 +4,10 @@ import { deepseek } from "@ai-sdk/deepseek";
 import { openai } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
 
+// 注册多 LLM 提供商，运行时按 DIFF_SENSE_PROVIDER 选择
 const registry = createProviderRegistry({ anthropic, deepseek, openai });
 
+/** 模型解析结果 */
 export interface ResolvedConfig {
   model: LanguageModel;
   provider: string;
@@ -24,6 +26,7 @@ export function resolveModel(): ResolvedConfig {
     );
   }
 
+  // registry.languageModel() 接受 `provider:model` 格式，需要类型断言满足联合类型签名
   const id = `${provider}:${modelId}` as "anthropic:_" | "deepseek:_" | "openai:_";
   const model = registry.languageModel(id);
   return { model, provider, modelId };
