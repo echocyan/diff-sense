@@ -1,8 +1,8 @@
 import type { LanguageModel } from "ai";
-import type { DiffEntry, ReviewResult } from "./types.js";
-import { getDiff, type DiffMode } from "./diff.js";
-import { filterFiles, type FilterOptions } from "./filter.js";
-import { runReviewAgent } from "./agent/loop.js";
+import type { DiffEntry, ReviewResult } from "./types";
+import { getDiff, type DiffMode } from "./diff";
+import { filterFiles, type FilterOptions } from "./filter";
+import { runReviewAgent } from "./agent/loop";
 
 export interface ReviewOptions {
   model: LanguageModel;

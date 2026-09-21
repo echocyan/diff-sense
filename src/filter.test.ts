@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { filterFiles, isSensitivePath, matchesUserExclude, isCodeFile } from "./filter.js";
-import type { DiffEntry } from "./types.js";
+import { filterFiles, isSensitivePath, matchesUserExclude, isCodeFile } from "./filter";
+import type { DiffEntry } from "./types";
 
 function entry(overrides: Partial<DiffEntry> = {}): DiffEntry {
   return {

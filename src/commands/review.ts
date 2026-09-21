@@ -1,9 +1,9 @@
 import type { Command } from "commander";
 import { spinner } from "@clack/prompts";
-import { resolveModel } from "../config.js";
-import { review } from "../review.js";
-import { formatText } from "../output/text.js";
-import type { DiffMode } from "../diff.js";
+import { resolveModel } from "../config";
+import { review } from "../review";
+import { formatText } from "../output/text";
+import type { DiffMode } from "../diff";
 
 interface ReviewCliOptions {
   background?: string;

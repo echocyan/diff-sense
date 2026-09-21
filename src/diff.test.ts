@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { parseDiff, getCommitDiff, getRangeDiff, getWorkspaceDiff, getDiff } from "./diff.js";
+import { parseDiff, getCommitDiff, getRangeDiff, getWorkspaceDiff, getDiff } from "./diff";
 
 const SAMPLE_DIFF = `diff --git a/src/foo.ts b/src/foo.ts
 index abc1234..def5678 100644

@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { createRequire } from "node:module";
-import { registerReviewCommand } from "./commands/review.js";
-import { registerConfigCommand } from "./commands/config.js";
+import { registerReviewCommand } from "./commands/review";
+import { registerConfigCommand } from "./commands/config";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };

@@ -1,5 +1,5 @@
 import pc from "picocolors";
-import type { Finding, ReviewResult } from "../types.js";
+import type { Finding, ReviewResult } from "../types";
 
 const SEVERITY_BADGE: Record<string, string> = {
   high: pc.bgRed(pc.white(" HIGH ")),

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
-import type { DiffEntry } from "./types.js";
+import type { DiffEntry } from "./types";
 
 const BINARY_MARKER = "Binary files";
 

@@ -1,4 +1,4 @@
-import type { DiffEntry } from "../types.js";
+import type { DiffEntry } from "../types";
 
 export function buildSystemPrompt(): string {
   return `You are a senior code reviewer. Your job is to review code changes and find real defects.

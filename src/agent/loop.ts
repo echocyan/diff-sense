@@ -1,8 +1,8 @@
 import { ToolLoopAgent, hasToolCall, isStepCount } from "ai";
 import type { LanguageModel } from "ai";
-import type { DiffEntry, Finding, ReviewResult } from "../types.js";
-import { createTools } from "./tools.js";
-import { buildSystemPrompt, buildUserPrompt } from "./prompts.js";
+import type { DiffEntry, Finding, ReviewResult } from "../types";
+import { createTools } from "./tools";
+import { buildSystemPrompt, buildUserPrompt } from "./prompts";
 
 interface RunReviewAgentOptions {
   model: LanguageModel;

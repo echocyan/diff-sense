@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join } from "node:path";
-import type { Finding } from "../types.js";
+import type { Finding } from "../types";
 
 const exec = promisify(execFile);
 

@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type { DiffEntry } from "./types.js";
+import type { DiffEntry } from "./types";
 
 const exec = promisify(execFile);
 const GIT_MAX_BUFFER = 10 * 1024 * 1024;

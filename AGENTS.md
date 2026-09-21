@@ -61,8 +61,8 @@ CLI (src/index.ts → src/commands/review.ts)
 - **注释**：编写简洁的中文注释，使用 TSDoc
 - **提交信息**：Conventional Commits 格式，描述和正文使用简体中文，类型和作用域保留英文
 - **提交范围**：每次提交只包含一个逻辑变更
-- **测试**：仅在必要时编写测试，禁止在实现业务代码后补测试；测试文件与源码同目录（`*.test.ts`）
-- **构建**：TypeScript ESM（`"module": "NodeNext"`），tsup 单入口打包，target node20
+- **测试**：仅在必要时编写测试，禁止在实现业务代码后补测试
+- **构建**：TypeScript ESM（`"moduleResolution": "Bundler"`），tsup 单入口打包，target node20
 - **格式化 / 代码检查**：oxfmt + oxlint
 
 ## Agent skills
