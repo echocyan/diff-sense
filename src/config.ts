@@ -1,9 +1,10 @@
 import { createProviderRegistry } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { deepseek } from "@ai-sdk/deepseek";
 import { openai } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
 
-const registry = createProviderRegistry({ anthropic, openai });
+const registry = createProviderRegistry({ anthropic, deepseek, openai });
 
 export interface ResolvedConfig {
   model: LanguageModel;
@@ -23,7 +24,7 @@ export function resolveModel(): ResolvedConfig {
     );
   }
 
-  const id = `${provider}:${modelId}` as "anthropic:_" | "openai:_";
+  const id = `${provider}:${modelId}` as "anthropic:_" | "deepseek:_" | "openai:_";
   const model = registry.languageModel(id);
   return { model, provider, modelId };
 }
