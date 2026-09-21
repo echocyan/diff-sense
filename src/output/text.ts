@@ -1,0 +1,57 @@
+import pc from "picocolors";
+import type { Finding, ReviewResult } from "../types.js";
+
+const SEVERITY_BADGE: Record<string, string> = {
+  high: pc.bgRed(pc.white(" HIGH ")),
+  medium: pc.bgYellow(pc.black(" MEDIUM ")),
+  low: pc.bgBlue(pc.white(" LOW ")),
+};
+
+export function formatText(result: ReviewResult): string {
+  const { findings } = result;
+  if (findings.length === 0) {
+    return pc.green("✓ 未发现问题");
+  }
+
+  const grouped = groupByFile(findings);
+  const parts: string[] = [];
+
+  for (const [file, items] of grouped) {
+    parts.push(pc.bold(pc.underline(file)));
+    for (const f of items) {
+      const badge = SEVERITY_BADGE[f.severity] ?? f.severity;
+      const category = pc.dim(`[${f.category}]`);
+      parts.push(`  ${badge} ${category} ${f.content}`);
+      if (f.existingCode) {
+        parts.push(pc.dim(`    > ${f.existingCode.split("\n")[0]}`));
+      }
+      if (f.suggestionCode) {
+        parts.push(pc.green(`    + ${f.suggestionCode.split("\n")[0]}`));
+      }
+      parts.push("");
+    }
+  }
+
+  const summary = [
+    `${findings.length} 个发现`,
+    `${findings.filter((f) => f.severity === "high").length} high`,
+    `${findings.filter((f) => f.severity === "medium").length} medium`,
+    `${findings.filter((f) => f.severity === "low").length} low`,
+  ].join(" · ");
+
+  parts.push(pc.dim(`─`.repeat(40)));
+  parts.push(summary);
+  parts.push(pc.dim(`${result.totalTokens} tokens · ${(result.durationMs / 1000).toFixed(1)}s`));
+
+  return parts.join("\n");
+}
+
+function groupByFile(findings: Finding[]): Map<string, Finding[]> {
+  const map = new Map<string, Finding[]>();
+  for (const f of findings) {
+    const list = map.get(f.path) ?? [];
+    list.push(f);
+    map.set(f.path, list);
+  }
+  return map;
+}

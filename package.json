@@ -44,8 +44,12 @@
     "vitest": "^5.0.1"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.58",
+    "@ai-sdk/openai": "^4.0.71",
     "@clack/prompts": "^1.8.1",
+    "ai": "^7.0.107",
     "commander": "^15.0.0",
-    "picocolors": "^1.1.1"
+    "picocolors": "^1.1.1",
+    "zod": "^4.6.5"
   }
 }
