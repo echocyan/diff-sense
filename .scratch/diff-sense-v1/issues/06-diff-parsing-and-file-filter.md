@@ -1,0 +1,15 @@
+# 06: Diff 完整解析 + 文件过滤器
+
+**What to build:** 补齐 Commit 和 Range 两种 diff 模式，实现完整四道门文件过滤器。`diff-sense review --commit <sha>` 审查单个提交，`diff-sense review --from main --to feature` 审查分支范围。文件过滤器按顺序执行：二进制排除 → 敏感路径排除（.env 等）→ 用户排除（`--exclude` CLI 标志 + `.diff-sense/rules.json` 中的 exclude）→ 扩展名白名单。单元测试覆盖全部 diff 模式和过滤门。
+
+**Blocked by:** 05 (最小审查流水线)
+
+**Status:** ready-for-agent
+
+- [ ] Commit 模式 diff 解析：`git diff <sha>~1 <sha>` 或 `git show <sha>`
+- [ ] Range 模式 diff 解析：`git diff <from> <to>`
+- [ ] `--commit` 和 `--from`/`--to` CLI 标志接入 review 命令
+- [ ] 敏感路径排除门：.env、密钥文件、证书等模式
+- [ ] 用户排除门：`--exclude` CLI 标志 + 配置文件中的 exclude 模式
+- [ ] 扩展名白名单门：仅放行代码文件扩展名
+- [ ] 单元测试：三种 diff 模式的解析、四道门各自的过滤逻辑
