@@ -1,12 +1,30 @@
 {
   "name": "diff-sense",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "0.1.0",
+  "description": "轻量级 AI 驱动的代码审查 CLI 工具",
+  "type": "module",
+  "bin": {
+    "diff-sense": "dist/index.js"
   },
-  "keywords": [],
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint src",
+    "fmt": "oxfmt src",
+    "fmt:check": "oxfmt --check src"
+  },
+  "keywords": [
+    "code-review",
+    "ai",
+    "cli",
+    "diff"
+  ],
   "author": "",
   "license": "ISC",
   "devEngines": {
@@ -17,5 +35,17 @@
     }
   },
   "packageManager": "pnpm@11.24.0",
-  "type": "module"
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "oxfmt": "^0.68.0",
+    "oxlint": "^1.83.0",
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.8.1",
+    "commander": "^15.0.0",
+    "picocolors": "^1.1.1"
+  }
 }
