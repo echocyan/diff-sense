@@ -4,16 +4,16 @@
 
 **Blocked by:** 04 (项目脚手架 + CLI 骨架)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Workspace 模式 diff 解析：调用 git 获取未提交变更，解析为结构化 diff 对象
-- [ ] 最小文件过滤：排除二进制文件
-- [ ] 审查提示词模板：system + user 消息对，XML 标签包裹 diff 内容
-- [ ] ToolLoopAgent 配置：stopWhen 组合条件（hasToolCall('task_done') + isStepCount(30)）
-- [ ] code_comment 工具：收集发现到累加器，schema 含 severity / content / existing_code / suggestion_code / category / path
-- [ ] file_read 工具：读取仓库中的文件内容
-- [ ] code_search 工具：通过 git grep 搜索代码库
-- [ ] task_done 工具：无 execute 函数，触发循环终止
-- [ ] Text 格式输出：按文件分组展示发现（severity badge + 内容 + 建议）
-- [ ] `review` 命令从 stub 升级为实际调用审查流水线
-- [ ] 端到端可验证：对有未提交变更的仓库运行 `diff-sense review` 输出审查发现
+- [x] Workspace 模式 diff 解析：调用 git 获取未提交变更，解析为结构化 diff 对象
+- [x] 最小文件过滤：排除二进制文件
+- [x] 审查提示词模板：system + user 消息对，XML 标签包裹 diff 内容
+- [x] ToolLoopAgent 配置：stopWhen 组合条件（hasToolCall('task_done') + isStepCount(30)）
+- [x] code_comment 工具：收集发现到累加器，schema 含 severity / content / existing_code / suggestion_code / category / path
+- [x] file_read 工具：读取仓库中的文件内容
+- [x] code_search 工具：通过 git grep 搜索代码库
+- [x] task_done 工具：无 execute 函数，触发循环终止
+- [x] Text 格式输出：按文件分组展示发现（severity badge + 内容 + 建议）
+- [x] `review` 命令从 stub 升级为实际调用审查流水线
+- [x] 端到端可验证：对有未提交变更的仓库运行 `diff-sense review` 输出审查发现
