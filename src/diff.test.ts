@@ -81,6 +81,25 @@ describe("parseDiff", () => {
     expect(entries[0].path).toBe("src/new.ts");
   });
 
+  it("解析 git 加引号的路径（非 ASCII / 含空格）", () => {
+    const raw = `diff --git "a/src/\\344\\270\\255.ts" "b/src/\\344\\270\\255.ts"
+index abc1234..def5678 100644
+--- "a/src/\\344\\270\\255.ts"
++++ "b/src/\\344\\270\\255.ts"
+@@ -1 +1 @@
+-a
++b
+diff --git a/my file.ts b/my file.ts
+index abc1234..def5678 100644
+--- a/my file.ts
++++ b/my file.ts
+@@ -1 +1 @@
+-a
++b
+`;
+    expect(parseDiff(raw).map((e) => e.path)).toEqual(["src/中.ts", "my file.ts"]);
+  });
+
   it("检测删除文件", () => {
     const entries = parseDiff(DELETED_DIFF);
     expect(entries).toHaveLength(1);
@@ -153,10 +172,26 @@ describe("getRangeDiff", () => {
 });
 
 describe("getWorkspaceDiff", () => {
-  it("合并 staged 和 unstaged diff", async () => {
+  it("对比 HEAD 与工作区，同一文件只产出一条", async () => {
     mockExec.mockResolvedValueOnce({ stdout: SAMPLE_DIFF, stderr: "" });
-    mockExec.mockResolvedValueOnce({ stdout: "", stderr: "" });
     const entries = await getWorkspaceDiff("/tmp/repo");
+    expect(mockExec).toHaveBeenLastCalledWith(
+      "git",
+      ["diff", "HEAD", "--unified=3"],
+      expect.objectContaining({ cwd: "/tmp/repo" }),
+    );
+    expect(entries.map((e) => e.path)).toEqual(["src/foo.ts", "src/bar.ts"]);
+  });
+
+  it("尚无提交时回退到空树", async () => {
+    mockExec.mockRejectedValueOnce(new Error("bad revision 'HEAD'"));
+    mockExec.mockResolvedValueOnce({ stdout: SAMPLE_DIFF, stderr: "" });
+    const entries = await getWorkspaceDiff("/tmp/repo");
+    expect(mockExec).toHaveBeenLastCalledWith(
+      "git",
+      ["diff", "4b825dc642cb6eb9a060e54bf8d69288fbee4904", "--unified=3"],
+      expect.objectContaining({ cwd: "/tmp/repo" }),
+    );
     expect(entries).toHaveLength(2);
   });
 });
@@ -164,7 +199,6 @@ describe("getWorkspaceDiff", () => {
 describe("getDiff", () => {
   it("workspace 模式调用 getWorkspaceDiff", async () => {
     mockExec.mockResolvedValueOnce({ stdout: SAMPLE_DIFF, stderr: "" });
-    mockExec.mockResolvedValueOnce({ stdout: "", stderr: "" });
     const entries = await getDiff({ type: "workspace" }, "/tmp/repo");
     expect(entries).toHaveLength(2);
   });

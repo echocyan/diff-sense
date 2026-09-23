@@ -5,6 +5,8 @@ import type { DiffEntry } from "./types";
 const exec = promisify(execFile);
 // git diff 输出缓冲区上限 10 MB，超大仓库可能需要调大
 const GIT_MAX_BUFFER = 10 * 1024 * 1024;
+// git 内置的空树对象，用于尚无提交的仓库
+const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
 /** diff 获取模式：工作区 / 单次提交 / 两个引用之间的范围 */
 export type DiffMode =
@@ -24,17 +26,27 @@ export async function getDiff(mode: DiffMode, cwd: string): Promise<DiffEntry[]>
   }
 }
 
-/** 获取工作区差异（staged + unstaged） */
+/**
+ * 获取工作区差异（staged + unstaged）
+ *
+ * 用 `git diff HEAD` 一次性对比 HEAD 与工作区，避免同一文件在 staged / unstaged 中各出一条
+ */
 export async function getWorkspaceDiff(cwd: string): Promise<DiffEntry[]> {
-  const [staged, unstaged] = await Promise.all([
-    exec("git", ["diff", "--cached", "--unified=3"], { cwd, maxBuffer: GIT_MAX_BUFFER }),
-    exec("git", ["diff", "--unified=3"], { cwd, maxBuffer: GIT_MAX_BUFFER }),
-  ]);
-
-  const combined = [staged.stdout, unstaged.stdout].filter(Boolean).join("\n");
-  if (!combined.trim()) return [];
-
-  return parseDiff(combined);
+  let stdout: string;
+  try {
+    ({ stdout } = await exec("git", ["diff", "HEAD", "--unified=3"], {
+      cwd,
+      maxBuffer: GIT_MAX_BUFFER,
+    }));
+  } catch {
+    // 尚无提交时 HEAD 不存在，改为对比空树
+    ({ stdout } = await exec("git", ["diff", EMPTY_TREE, "--unified=3"], {
+      cwd,
+      maxBuffer: GIT_MAX_BUFFER,
+    }));
+  }
+  if (!stdout.trim()) return [];
+  return parseDiff(stdout);
 }
 
 /** 获取单个提交的 diff，初始提交时回退到 git show */
@@ -74,12 +86,9 @@ export function parseDiff(raw: string): DiffEntry[] {
   const fileDiffs = raw.split(/^diff --git /m).filter(Boolean);
 
   for (const chunk of fileDiffs) {
-    // 从 "a/path b/path" 头部提取文件路径，取 b/ 侧（变更后路径）
-    const headerMatch = chunk.match(/^a\/(.+?) b\/(.+)/m);
-    if (!headerMatch) continue;
-
-    const pathB = headerMatch[2];
     const lines = chunk.split("\n");
+    const pathB = parseHeaderPath(lines[0]);
+    if (!pathB) continue;
 
     // 通过 diff 元数据行判定文件状态：新增 / 删除 / 重命名 / 修改
     let status: DiffEntry["status"] = "modified";
@@ -105,4 +114,39 @@ export function parseDiff(raw: string): DiffEntry[] {
   }
 
   return entries;
+}
+
+/**
+ * 从 diff 头部 `a/path b/path` 提取 b/ 侧（变更后）路径
+ *
+ * 含非 ASCII 或特殊字符的路径会被 git 加引号并转义，如 `"b/\\344\\270\\255.ts"`
+ */
+function parseHeaderPath(header: string): string | undefined {
+  const quoted = header.match(/ "b\/((?:[^"\\]|\\.)*)"$/);
+  if (quoted) return unquoteCPath(quoted[1]);
+  // a/ 侧可能单独加了引号（如重命名自非 ASCII 路径）
+  const plain = header.match(/^(?:"(?:[^"\\]|\\.)*"|a\/.+?) b\/(.+)$/);
+  return plain?.[1];
+}
+
+/** git C 风格转义中的单字符转义 */
+const C_ESCAPES: Record<string, number> = { n: 10, t: 9, r: 13, a: 7, b: 8, f: 12, v: 11 };
+
+/** 还原 git 的 C 风格路径转义（\\"、\\\\、\\t 等，以及八进制表示的 UTF-8 字节） */
+function unquoteCPath(s: string): string {
+  const bytes: number[] = [];
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] !== "\\") {
+      const cp = s.codePointAt(i)!;
+      bytes.push(...Buffer.from(String.fromCodePoint(cp), "utf-8"));
+      if (cp > 0xffff) i++;
+    } else if (/[0-7]{3}/.test(s.slice(i + 1, i + 4))) {
+      bytes.push(parseInt(s.slice(i + 1, i + 4), 8));
+      i += 3;
+    } else {
+      const next = s[++i];
+      bytes.push(C_ESCAPES[next] ?? next.charCodeAt(0));
+    }
+  }
+  return Buffer.from(bytes).toString("utf-8");
 }

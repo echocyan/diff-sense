@@ -1,6 +1,6 @@
 # 05: 最小审查流水线（Tracer Bullet）
 
-**What to build:** 最窄的端到端审查路径。Workspace 模式 diff 解析（`git diff` + `git diff --cached`）→ 最小文件过滤（仅跳过二进制）→ 不分组（所有文件归入一组）→ ToolLoopAgent 工具调用循环（code_comment / file_read / code_search / task_done 四个工具 + 审查提示词模板）→ Text 格式输出（发现列表，无行号锚定）。LLM 提供商通过环境变量 `DIFF_SENSE_PROVIDER` / `DIFF_SENSE_MODEL` / `DIFF_SENSE_API_KEY` 直接读取。运行 `diff-sense review` 能对未提交变更产出真实 LLM 审查发现。
+**What to build:** 最窄的端到端审查路径。Workspace 模式 diff 解析（`git diff HEAD`，一次覆盖 staged + unstaged；无提交时对比空树）→ 最小文件过滤（仅跳过二进制）→ 不分组（所有文件归入一组）→ ToolLoopAgent 工具调用循环（code_comment / file_read / code_search / task_done 四个工具 + 审查提示词模板）→ Text 格式输出（发现列表，无行号锚定）。LLM 提供商通过环境变量 `DIFF_SENSE_PROVIDER` / `DIFF_SENSE_MODEL` / `DIFF_SENSE_API_KEY` 直接读取。运行 `diff-sense review` 能对未提交变更产出真实 LLM 审查发现。
 
 **Blocked by:** 04 (项目脚手架 + CLI 骨架)
 
@@ -21,3 +21,5 @@
 ## Comments
 
 - 审查修复（2026-09-23）：`file_read` 解析符号链接后拒绝仓库外路径（`../`、绝对路径、外链）；`code_search` 用 `-e` 传查询，防止 git 选项注入。
+
+- 审查修复（2026-09-23）：Workspace 模式由 `git diff` + `git diff --cached` 拼接改为 `git diff HEAD`，修复同一文件同时有 staged / unstaged 改动时产出两条 DiffEntry 的问题。
