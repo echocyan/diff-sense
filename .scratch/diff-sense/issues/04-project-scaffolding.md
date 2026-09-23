@@ -13,3 +13,7 @@
 - [x] `diff-sense version` 正确输出版本号
 - [x] Vitest 配置就绪，一个 placeholder 测试通过
 - [x] `pnpm build && node dist/index.js version` 工作正常
+
+## Comments
+
+- 审查修复（2026-09-23）：版本号改为 `import { version } from "package.json"`，由 tsup 构建时内联；CLI 入口与 `version` 命令统一调用 `getVersion()`，修复打包后相对路径失效的问题。

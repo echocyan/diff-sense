@@ -1,10 +1,7 @@
-import { createRequire } from "node:module";
-
-// ESM 不支持直接 import JSON，通过 createRequire 桥接加载 package.json
-const require = createRequire(import.meta.url);
+// 由 tsup（esbuild）在构建时内联，不依赖运行时的 package.json 相对路径
+import { version } from "../../package.json";
 
 /** 读取 package.json 中的版本号 */
 export function getVersion(): string {
-  const pkg = require("../../package.json") as { version: string };
-  return pkg.version;
+  return version;
 }
