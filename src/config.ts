@@ -3,6 +3,88 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
+import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { z } from "zod";
+
+/** 用户级配置文件路径 */
+export const CONFIG_FILE = join(homedir(), ".diff-sense", "config.json");
+
+/** 已注册的 LLM 提供商 */
+export const PROVIDERS = ["anthropic", "deepseek", "openai"] as const;
+
+/** 可配置项 */
+export const CONFIG_KEYS = ["provider", "model", "apiKey"] as const;
+
+/** 提供商名称 */
+export type Provider = (typeof PROVIDERS)[number];
+
+/** 可配置项名称 */
+export type ConfigKey = (typeof CONFIG_KEYS)[number];
+
+/** 配置文件内容：各项均可缺省 */
+const SettingsSchema = z.strictObject({
+  provider: z.enum(PROVIDERS).optional(),
+  model: z.string().optional(),
+  apiKey: z.string().optional(),
+});
+
+/** 配置文件内容 */
+export type Settings = z.infer<typeof SettingsSchema>;
+
+/** 读取配置文件，不存在时返回空配置 */
+export async function readConfigFile(path = CONFIG_FILE): Promise<Settings> {
+  let raw: string;
+  try {
+    raw = await readFile(path, "utf-8");
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return {};
+    throw err;
+  }
+
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`${path} 不是合法的 JSON：${(err as Error).message}`);
+  }
+
+  const result = SettingsSchema.safeParse(json);
+  if (!result.success) {
+    throw new Error(`${path} 格式无效：\n${z.prettifyError(result.error)}`);
+  }
+  return result.data;
+}
+
+/** 写入单个配置项；文件含 API Key，权限设为仅所有者可读写 */
+export async function setConfigValue(key: string, value: string, path = CONFIG_FILE) {
+  const settings = await readConfigFile(path);
+  const k = assertConfigKey(key);
+  if (k === "provider") settings.provider = assertProvider(value);
+  else settings[k] = value;
+  await mkdir(dirname(path), { recursive: true, mode: 0o700 });
+  await writeFile(path, JSON.stringify(settings, null, 2) + "\n", { mode: 0o600 });
+  // 文件已存在时 writeFile 不改权限，显式收紧
+  await chmod(path, 0o600);
+}
+
+/** 读取单个配置项，未设置时返回 undefined */
+export async function getConfigValue(key: string, path = CONFIG_FILE) {
+  return (await readConfigFile(path))[assertConfigKey(key)];
+}
+
+/** 校验配置项名称 */
+function assertConfigKey(key: string): ConfigKey {
+  if ((CONFIG_KEYS as readonly string[]).includes(key)) return key as ConfigKey;
+  throw new Error(`未知配置项 ${key}，可选：${CONFIG_KEYS.join("、")}`);
+}
+
+/** 校验提供商名称 */
+function assertProvider(provider: string): Provider {
+  if ((PROVIDERS as readonly string[]).includes(provider)) return provider as Provider;
+  throw new Error(`不支持的 provider：${provider}，可选：${PROVIDERS.join("、")}`);
+}
 
 /** 模型解析结果 */
 export interface ResolvedConfig {

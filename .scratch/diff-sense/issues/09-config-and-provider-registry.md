@@ -4,9 +4,9 @@
 
 **Blocked by:** 05 (最小审查流水线)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
-- [ ] 配置文件读写：`~/.diff-sense/config.json` 的加载、创建、更新
+- [x] 配置文件读写：`~/.diff-sense/config.json` 的加载、创建、更新
 - [ ] 环境变量合并：DIFF_SENSE_PROVIDER / DIFF_SENSE_MODEL / DIFF_SENSE_API_KEY 优先于配置文件
 - [ ] `config` 命令：无参数 → 交互式向导（inquirer 或类似库），`set`/`get` 子命令
 - [ ] `createProviderRegistry` 多提供商注册：支持 Anthropic、OpenAI 等 AI SDK 提供商
