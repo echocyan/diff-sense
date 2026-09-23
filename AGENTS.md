@@ -77,7 +77,7 @@ CLI (src/index.ts → src/commands/review.ts)
 - **注释**：编写中文注释，遵循 TSDoc 规范
 - **提交信息**：Conventional Commits 格式，描述和正文使用简体中文，类型和作用域保留英文
 - **提交范围**：每次提交只包含一个逻辑变更
-- **构建**：TypeScript ESM（`"moduleResolution": "Bundler"`），tsup 单入口打包，target node20
+- **构建**：TypeScript ESM（`"moduleResolution": "Bundler"`），tsup 单入口打包，target node22.12（与 `engines` 一致，由运行时依赖的最低要求决定）
 - **格式化 / 代码检查**：oxfmt + oxlint
 - **文档同步**：文档需与想法、决策和代码保持同步
 

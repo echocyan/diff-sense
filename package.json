@@ -9,6 +9,12 @@
   "files": [
     "dist"
   ],
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -17,15 +23,28 @@
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src",
     "fmt": "oxfmt src",
-    "fmt:check": "oxfmt --check src"
+    "fmt:check": "oxfmt --check src",
+    "prepack": "pnpm build",
+    "prepublishOnly": "pnpm typecheck && pnpm lint && pnpm test"
   },
   "keywords": [
     "code-review",
     "ai",
+    "llm",
     "cli",
-    "diff"
+    "diff",
+    "git",
+    "github-action"
   ],
-  "author": "",
+  "homepage": "https://github.com/echocyan/diff-sense#readme",
+  "bugs": {
+    "url": "https://github.com/echocyan/diff-sense/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/echocyan/diff-sense.git"
+  },
+  "author": "EchoCyan",
   "license": "ISC",
   "devEngines": {
     "packageManager": {

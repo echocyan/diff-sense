@@ -68,10 +68,11 @@ The system is split into two layers:
 - **CLI framework**: Commander.js
 - **Terminal interaction**: @clack/prompts (interactive wizard + spinner)
 - **Terminal colors**: picocolors
-- **Build tool**: tsup (single-file bundle)
+- **Runtime**: Node.js 22.12+ (`engines`; the floor set by `commander` and the AI SDK packages)
+- **Build tool**: tsup (single-file bundle; runtime dependencies stay external and are installed by npm)
 - **Test framework**: Vitest
 - **Concurrency**: `p-limit` for parallel group review (default concurrency: 4)
-- **npm package**: `diff-sense` (unscoped)
+- **npm package**: `diff-sense` (unscoped); CLI only — `exports` exposes nothing but `package.json`, and the tarball contains only `dist/index.js` and `package.json`
 
 ### CLI Commands
 
