@@ -1,5 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { DiffEntry } from "./types";
 
 const exec = promisify(execFile);
@@ -23,6 +25,29 @@ export async function getDiff(mode: DiffMode, cwd: string): Promise<DiffEntry[]>
       return getCommitDiff(mode.sha, cwd);
     case "range":
       return getRangeDiff(mode.from, mode.to, cwd);
+  }
+}
+
+/**
+ * 读取变更后（新侧）的完整文件内容，文件不存在时返回 undefined
+ *
+ * workspace 读工作区文件；commit 读该提交中的版本；range 读 to 端的版本
+ */
+export async function readNewFile(
+  mode: DiffMode,
+  path: string,
+  cwd: string,
+): Promise<string | undefined> {
+  try {
+    if (mode.type === "workspace") return await readFile(join(cwd, path), "utf-8");
+    const rev = mode.type === "commit" ? mode.sha : mode.to;
+    const { stdout } = await exec("git", ["show", `${rev}:${path}`], {
+      cwd,
+      maxBuffer: GIT_MAX_BUFFER,
+    });
+    return stdout;
+  } catch {
+    return undefined;
   }
 }
 
