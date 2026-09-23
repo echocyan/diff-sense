@@ -1,6 +1,6 @@
 ---
 name: codex-subagent
-description: 把 OpenAI Codex CLI 当作一次性 subagent 调用：写好自包含的任务简报，交给 Codex 执行（实现、审查、调研等任意任务），读回结果后收尾。在 Herdr 内时开一个可见的兄弟 pane 运行交互式 Codex，否则退回后台 `codex exec`。仅在用户明确要求时使用，例如输入 /codex-subagent，或说"用 Codex / 让 Codex 去 / 问问 Codex / 交给 codex"；不要因为任务适合委派就自行触发。
+description: 把 OpenAI Codex CLI 当作一次性 subagent 调用：写好自包含的任务简报，交给 Codex 执行（实现、审查、调研等任意任务），读回结果后收尾。在 Herdr 内时新开一个标签页运行交互式 Codex，否则退回后台 `codex exec`。仅在用户明确要求时使用；不要因为任务适合委派就自行触发。
 ---
 
 # Codex Subagent
@@ -43,14 +43,13 @@ Codex 看不到当前对话，简报就是它掌握的全部信息。缺了什�
 test "${HERDR_ENV:-}" = 1
 ```
 
-**开 pane**：先看调用方 pane 的形状，宽的向右分，窄或高的向下分；已有多列时避免继续同向切分。
+**开标签页**：在当前 workspace 新建一个标签页，不抢占用户焦点，也不改动用户当前标签页的布局：
 
 ```bash
-herdr pane layout --pane "$HERDR_PANE_ID"
-herdr pane split --current --direction right --cwd "$PWD" --no-focus
+herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd "$PWD" --label codex-<task> --no-focus
 ```
 
-从返回 JSON 的 `.result.pane.pane_id` 取新 pane ID，记下来——收尾只关这个 pane。
+从返回 JSON 中取 `.result.tab.tab_id` 和 `.result.root_pane.pane_id`，记下来——Codex 跑在这个 root pane 里，收尾时只关这个标签页。
 
 **启动 Codex**：
 
@@ -78,13 +77,13 @@ herdr agent read codex-<task> --source recent-unwrapped --lines 400
 herdr agent prompt codex-<task> "把你刚才的完整汇报写入 <scratchpad>/codex-<task>/report.md，只回复文件路径。" --wait --timeout 300000
 ```
 
-**收尾**：拿到结果后关闭自己创建的 pane（会一并结束 Codex）：
+**收尾**：拿到结果后关闭自己创建的标签页（会一并结束 Codex）：
 
 ```bash
-herdr pane close <pane-id>
+herdr tab close <tab-id>
 ```
 
-**异常**：`prompt --wait` 返回 `blocked`、`timeout`、`agent_prompt_stalled` 时，先 `herdr agent get` + `herdr agent read` 查看现场，把情况报告给用户，由用户决定下一步。不要替用户回答审批/问题，不要自动杀掉或关闭 pane，也不要盲目重发简报——超时并不代表提示没送达。
+**异常**：`prompt --wait` 返回 `blocked`、`timeout`、`agent_prompt_stalled` 时，先 `herdr agent get` + `herdr agent read` 查看现场，把情况报告给用户，由用户决定下一步。不要替用户回答审批/问题，不要自动杀掉 Codex 或关闭标签页，也不要盲目重发简报——超时并不代表提示没送达。
 
 ## 3b. 兜底模式（不在 Herdr 内）
 
@@ -100,7 +99,7 @@ codex exec -s <sandbox> -C "$PWD" [-m <model>] \
 
 ## 4. 并行
 
-可以同时启动多个 Codex，各自使用唯一名字和独立 pane。多个 `workspace-write` 任务并行时，确保它们修改的文件范围互不重叠；有重叠就串行执行。新增 pane 时避免连续同向切分出过窄的列或过矮的行。
+可以同时启动多个 Codex，各自使用唯一名字和独立标签页。多个 `workspace-write` 任务并行时，确保它们修改的文件范围互不重叠；有重叠就串行执行。
 
 ## 5. 汇报给用户
 
