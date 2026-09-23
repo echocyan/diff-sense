@@ -1,13 +1,8 @@
 import type { DiffEntry, Location } from "./types";
+import { hunkNewSides, type NumberedLine } from "./diff";
 
 /** 读取变更后的完整文件，文件不存在时返回 undefined */
 export type ReadNewFile = (path: string) => Promise<string | undefined>;
-
-/** 带行号的一行代码 */
-interface NumberedLine {
-  line: number;
-  text: string;
-}
 
 /**
  * 将 existing_code 锚定到变更后文件的行号
@@ -45,24 +40,6 @@ export async function anchor(
   // 未传 path 且无法推断时：单文件审查即为该文件，否则无从确定
   const fallback = given ?? (entries.length === 1 ? entries[0].path : "unknown");
   return { path: fallback, line: 0, endLine: 0 };
-}
-
-/** 提取每个 hunk 新侧的行（跳过删除行），附带变更后文件中的行号 */
-function hunkNewSides(diff: string): NumberedLine[][] {
-  const hunks: NumberedLine[][] = [];
-  let current: NumberedLine[] | undefined;
-  let line = 0;
-  for (const raw of diff.split("\n")) {
-    const header = raw.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
-    if (header) {
-      current = [];
-      hunks.push(current);
-      line = Number(header[1]);
-    } else if (current && (raw.startsWith(" ") || raw.startsWith("+"))) {
-      current.push({ line: line++, text: raw.slice(1) });
-    }
-  }
-  return hunks;
 }
 
 /**

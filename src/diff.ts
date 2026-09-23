@@ -10,6 +10,12 @@ const GIT_MAX_BUFFER = 10 * 1024 * 1024;
 // git 内置的空树对象，用于尚无提交的仓库
 const EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
+/** 带行号的一行代码 */
+export interface NumberedLine {
+  line: number;
+  text: string;
+}
+
 /** diff 获取模式：工作区 / 单次提交 / 两个引用之间的范围 */
 export type DiffMode =
   | { type: "workspace" }
@@ -222,4 +228,22 @@ function unquoteCPath(s: string): string {
     }
   }
   return Buffer.from(bytes).toString("utf-8");
+}
+
+/** 提取每个 hunk 新侧的行（跳过删除行），附带变更后文件中的行号 */
+export function hunkNewSides(diff: string): NumberedLine[][] {
+  const hunks: NumberedLine[][] = [];
+  let current: NumberedLine[] | undefined;
+  let line = 0;
+  for (const raw of diff.split("\n")) {
+    const header = raw.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    if (header) {
+      current = [];
+      hunks.push(current);
+      line = Number(header[1]);
+    } else if (current && (raw.startsWith(" ") || raw.startsWith("+"))) {
+      current.push({ line: line++, text: raw.slice(1) });
+    }
+  }
+  return hunks;
 }
