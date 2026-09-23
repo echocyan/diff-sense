@@ -65,11 +65,16 @@ export function parseGroups(text: string, entries: DiffEntry[]): FileGroup[] {
   const assigned = new Set<number>();
   const groups: FileGroup[] = [];
   for (const { label, files } of parsed.data) {
-    const indices = files.filter((i) => i >= 0 && i < entries.length && !assigned.has(i));
-    indices.forEach((i) => assigned.add(i));
+    // 逐个登记，同一组内的重复索引也只保留第一次
+    const indices: number[] = [];
+    for (const i of files) {
+      if (i < 0 || i >= entries.length || assigned.has(i)) continue;
+      assigned.add(i);
+      indices.push(i);
+    }
     for (let start = 0; start < indices.length; start += MAX_FILES_PER_GROUP) {
-      const chunk = indices.slice(start, start + MAX_FILES_PER_GROUP);
-      groups.push({ label, entries: chunk.map((i) => entries[i]) });
+      const members = indices.slice(start, start + MAX_FILES_PER_GROUP);
+      groups.push({ label, entries: members.map((i) => entries[i]) });
     }
   }
   const unassigned = entries.filter((_, i) => !assigned.has(i));

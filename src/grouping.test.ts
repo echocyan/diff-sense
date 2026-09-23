@@ -74,6 +74,11 @@ describe("parseGroups", () => {
     expect(paths(groups)).toEqual([["f0.ts", "f1.ts"], ["f2.ts"], ["f3.ts"], ["f4.ts"]]);
   });
 
+  it("同一组内的重复索引只保留一次", () => {
+    const groups = parseGroups('[{"label":"a","files":[0,0,1,2,3]}]', entries(4));
+    expect(paths(groups)).toEqual([["f0.ts", "f1.ts", "f2.ts", "f3.ts"]]);
+  });
+
   it("超过 10 个文件的组拆分为不超过 10 个文件的多组", () => {
     const all = Array.from({ length: 23 }, (_, i) => i);
     const groups = parseGroups(JSON.stringify([{ label: "big", files: all }]), entries(23));
