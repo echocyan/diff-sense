@@ -45,3 +45,11 @@ export interface ReviewResult {
   /** 审查耗时（毫秒） */
   durationMs: number;
 }
+
+/** 一条审查规则：glob 模式匹配文件，命中后将规则文本注入审查提示词的 Review Checklist */
+export interface Rule {
+  /** 匹配文件路径的 glob 模式（大小写不敏感） */
+  pattern: string;
+  /** 规则文本（审查检查清单） */
+  rule: string;
+}
