@@ -11,5 +11,5 @@
 - [x] 回退到 line=0：标记为未锚定发现
 - [x] `code_comment` 未传 `path` 时推断所属文件：用 existing_code 在各文件 hunk 中匹配到的位置确定 path（spec："optional, defaults to current review file"），替换当前的 `"unknown"` 占位
 - [x] 集成到审查流水线：Agent 产出的 code_comment 经过锚定后再输出
-- [ ] Text 输出中展示行号（如 `src/foo.ts:42`），未锚定发现单独标记
+- [x] Text 输出中展示行号（如 `src/foo.ts:42`），未锚定发现单独标记
 - [x] 单元测试：精确匹配、空白差异匹配、多行代码片段、无匹配回退
