@@ -33,9 +33,10 @@ CLI (src/index.ts → src/commands/review.ts)
    → loadRules() (src/rules/matcher.ts)  ← 项目规则 + 内置规则（src/rules/builtin.ts）
    → runReviewAgent() (src/agent/loop.ts) ← ToolLoopAgent 循环
      ├── resolveGroupRules()  组内文件 → Review Checklist
+     ├── anchor()     行号锚定 (src/anchor.ts)，作为 locate 注入 code_comment；
+     │                全文件扫描经 readNewFile() (src/diff.ts) 读取
      ├── prompts.ts   系统/用户提示词
      └── tools.ts     code_comment / file_read / code_search / task_done
-                      code_comment → anchor() (src/anchor.ts) 行号锚定，全文件扫描经 readNewFile() 读取
  → formatText() (src/output/text.ts)     ← 终端输出
 ```
 
