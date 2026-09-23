@@ -172,10 +172,17 @@ describe("getRangeDiff", () => {
 });
 
 describe("getWorkspaceDiff", () => {
+  /** git ls-files 未跟踪文件列表的 mock 返回 */
+  const untracked = (...files: string[]) => ({
+    stdout: files.map((f) => `${f}\0`).join(""),
+    stderr: "",
+  });
+
   it("对比 HEAD 与工作区，同一文件只产出一条", async () => {
     mockExec.mockResolvedValueOnce({ stdout: SAMPLE_DIFF, stderr: "" });
+    mockExec.mockResolvedValueOnce(untracked());
     const entries = await getWorkspaceDiff("/tmp/repo");
-    expect(mockExec).toHaveBeenLastCalledWith(
+    expect(mockExec).toHaveBeenCalledWith(
       "git",
       ["diff", "HEAD", "--unified=3"],
       expect.objectContaining({ cwd: "/tmp/repo" }),
@@ -186,19 +193,54 @@ describe("getWorkspaceDiff", () => {
   it("尚无提交时回退到空树", async () => {
     mockExec.mockRejectedValueOnce(new Error("bad revision 'HEAD'"));
     mockExec.mockResolvedValueOnce({ stdout: SAMPLE_DIFF, stderr: "" });
+    mockExec.mockResolvedValueOnce(untracked());
     const entries = await getWorkspaceDiff("/tmp/repo");
-    expect(mockExec).toHaveBeenLastCalledWith(
+    expect(mockExec).toHaveBeenCalledWith(
       "git",
       ["diff", "4b825dc642cb6eb9a060e54bf8d69288fbee4904", "--unified=3"],
       expect.objectContaining({ cwd: "/tmp/repo" }),
     );
     expect(entries).toHaveLength(2);
   });
+
+  it("包含未跟踪文件，作为新增文件解析", async () => {
+    const newFileDiff = `diff --git a/src/new.ts b/src/new.ts
+new file mode 100644
+index 0000000..e69de29
+--- /dev/null
++++ b/src/new.ts
+@@ -0,0 +1 @@
++export const x = 1;
+`;
+    mockExec.mockResolvedValueOnce({ stdout: SAMPLE_DIFF, stderr: "" });
+    mockExec.mockResolvedValueOnce(untracked("src/new.ts"));
+    // git diff --no-index 有差异时以退出码 1 结束，execFile 会 reject 并附带 stdout
+    mockExec.mockRejectedValueOnce(
+      Object.assign(new Error("exit 1"), { code: 1, stdout: newFileDiff }),
+    );
+    const entries = await getWorkspaceDiff("/tmp/repo");
+    expect(mockExec).toHaveBeenCalledWith(
+      "git",
+      ["ls-files", "--others", "--exclude-standard", "-z"],
+      expect.objectContaining({ cwd: "/tmp/repo" }),
+    );
+    expect(mockExec).toHaveBeenCalledWith(
+      "git",
+      ["diff", "--no-index", "--unified=3", "--", "/dev/null", "src/new.ts"],
+      expect.objectContaining({ cwd: "/tmp/repo" }),
+    );
+    expect(entries.map((e) => `${e.status} ${e.path}`)).toEqual([
+      "modified src/foo.ts",
+      "added src/bar.ts",
+      "added src/new.ts",
+    ]);
+  });
 });
 
 describe("getDiff", () => {
   it("workspace 模式调用 getWorkspaceDiff", async () => {
     mockExec.mockResolvedValueOnce({ stdout: SAMPLE_DIFF, stderr: "" });
+    mockExec.mockResolvedValueOnce({ stdout: "", stderr: "" });
     const entries = await getDiff({ type: "workspace" }, "/tmp/repo");
     expect(entries).toHaveLength(2);
   });

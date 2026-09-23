@@ -27,9 +27,10 @@ export async function getDiff(mode: DiffMode, cwd: string): Promise<DiffEntry[]>
 }
 
 /**
- * 获取工作区差异（staged + unstaged）
+ * 获取工作区差异（staged + unstaged + untracked）
  *
- * 用 `git diff HEAD` 一次性对比 HEAD 与工作区，避免同一文件在 staged / unstaged 中各出一条
+ * 用 `git diff HEAD` 一次性对比 HEAD 与工作区，避免同一文件在 staged / unstaged 中各出一条；
+ * 未跟踪文件（遵循 .gitignore）另行生成新增文件 diff
  */
 export async function getWorkspaceDiff(cwd: string): Promise<DiffEntry[]> {
   let stdout: string;
@@ -45,8 +46,36 @@ export async function getWorkspaceDiff(cwd: string): Promise<DiffEntry[]> {
       maxBuffer: GIT_MAX_BUFFER,
     }));
   }
-  if (!stdout.trim()) return [];
-  return parseDiff(stdout);
+  const tracked = stdout.trim() ? parseDiff(stdout) : [];
+  return [...tracked, ...(await getUntrackedDiff(cwd))];
+}
+
+/** 为未跟踪文件生成新增文件 diff（逐个串行执行，避免大量未跟踪文件时进程数暴涨） */
+async function getUntrackedDiff(cwd: string): Promise<DiffEntry[]> {
+  const { stdout } = await exec("git", ["ls-files", "--others", "--exclude-standard", "-z"], {
+    cwd,
+    maxBuffer: GIT_MAX_BUFFER,
+  });
+  const files = stdout.split("\0").filter(Boolean);
+
+  const entries: DiffEntry[] = [];
+  for (const file of files) {
+    let diff: string;
+    try {
+      ({ stdout: diff } = await exec(
+        "git",
+        ["diff", "--no-index", "--unified=3", "--", "/dev/null", file],
+        { cwd, maxBuffer: GIT_MAX_BUFFER },
+      ));
+    } catch (err) {
+      // --no-index 有差异时退出码为 1，属正常情况，diff 内容在 stdout 中
+      const e = err as { code?: number; stdout?: string };
+      if (e.code !== 1 || e.stdout === undefined) throw err;
+      diff = e.stdout;
+    }
+    if (diff.trim()) entries.push(...parseDiff(diff));
+  }
+  return entries;
 }
 
 /** 获取单个提交的 diff，初始提交时回退到 git show */

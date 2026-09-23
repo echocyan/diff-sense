@@ -15,7 +15,7 @@ _Avoid_: Audit, scan, check
 _Avoid_: Changeset, patch
 
 **差异模式 (Diff Mode)**:
-决定如何从 git 获取差异。三选一：workspace（未提交的变更）、commit（单个 SHA）、range（两个 ref 之间）。
+决定如何从 git 获取差异。三选一：workspace（未提交的变更：staged + unstaged + 未跟踪文件）、commit（单个 SHA）、range（两个 ref 之间）。
 
 **发现 (Finding)**:
 一条锚定到代码位置的审查观察，具有严重程度、分类、描述内容，以及可选的修复建议。
