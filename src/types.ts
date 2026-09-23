@@ -1,6 +1,14 @@
 /** 审查发现的严重程度 */
 export type Severity = "high" | "medium" | "low";
 
+/** 输出格式 */
+export const OUTPUT_FORMATS = ["text", "json"] as const;
+export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
+
+/** 受众：human 显示进度，agent 静默（输出格式另由 OutputFormat 决定） */
+export const AUDIENCES = ["human", "agent"] as const;
+export type Audience = (typeof AUDIENCES)[number];
+
 /** 审查发现的分类 */
 export type Category = "bug" | "security" | "performance" | "maintainability" | "style" | "other";
 

@@ -5,11 +5,12 @@ import { review } from "../review";
 import { formatText } from "../output/text";
 import { formatJson } from "../output/json";
 import type { DiffMode } from "../diff";
+import { AUDIENCES, OUTPUT_FORMATS, type Audience, type OutputFormat } from "../types";
 
 /** review 子命令的 CLI 选项 */
 interface ReviewCliOptions {
-  format: "text" | "json";
-  audience: "human" | "agent";
+  format: OutputFormat;
+  audience: Audience;
   background?: string;
   commit?: string;
   from?: string;
@@ -22,12 +23,10 @@ export function registerReviewCommand(program: Command) {
   program
     .command("review")
     .description("审查代码变更")
-    .addOption(
-      new Option("--format <format>", "输出格式").choices(["text", "json"]).default("text"),
-    )
+    .addOption(new Option("--format <format>", "输出格式").choices(OUTPUT_FORMATS).default("text"))
     .addOption(
       new Option("--audience <audience>", "输出受众：agent 不显示进度")
-        .choices(["human", "agent"])
+        .choices(AUDIENCES)
         .default("human"),
     )
     .option("--background <text>", "业务上下文")
@@ -38,13 +37,11 @@ export function registerReviewCommand(program: Command) {
     .action(async (opts: ReviewCliOptions) => {
       // 进度写到 stderr，stdout 只留审查结果（便于管道处理 JSON）；agent 受众不显示进度
       const s = opts.audience === "human" ? spinner({ output: process.stderr }) : undefined;
-      let started = false;
 
       try {
         const diffMode = resolveDiffMode(opts);
         const { model, settings } = await resolveModel();
         s?.start(`使用 ${settings.provider}/${settings.model} 审查中...`);
-        started = true;
 
         const result = await review({
           model,
@@ -60,8 +57,8 @@ export function registerReviewCommand(program: Command) {
         s?.stop("审查完成");
         console.log(opts.format === "json" ? formatJson(result) : formatText(result));
       } catch (err) {
-        // 参数校验等失败发生在 spinner 启动前，此时无需停止
-        if (started) s?.stop("审查失败");
+        // spinner 未启动（如参数校验失败）时 stop 不输出任何内容；agent 受众无 spinner
+        s?.stop("审查失败");
         console.error(err instanceof Error ? err.message : String(err));
         process.exit(1);
       }

@@ -75,7 +75,7 @@ _Avoid_: Reviewer, bot
 ### 集成 (Integration)
 
 **受众 (Audience)**:
-审查输出的消费者身份。二选一：human（CLI 带进度显示）或 agent（静默，结构化输出供机器消费）。
+审查输出的消费者身份。二选一：human（显示进度）或 agent（静默，不显示进度，供其他工具调用）。受众只决定是否显示进度，输出格式由 `--format`（text / json）单独决定；机器消费时通常同时指定 `--format json --audience agent`。
 _Avoid_: Mode, target
 
 **Skill**:
