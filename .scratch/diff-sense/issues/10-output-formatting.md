@@ -15,4 +15,4 @@
 
 ## Comments
 
-- 审查修复（2026-09-23）：`--background` 已在 ticket 05 中提前实现（`src/commands/review.ts`、`src/agent/prompts.ts` 的 `<user_task><background>`），本工单无需重复实现。
+- 审查修复（2026-09-23）：`--background` 已在 ticket 05 中提前实现（`src/commands/review.ts`、`src/agent/prompts.ts` 中 `<user_task>` 内的 `### Requirement Background` 区域），本工单无需重复实现。
