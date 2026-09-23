@@ -1,7 +1,7 @@
-import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 import type { DiffEntry } from "./types";
 import { globToRegExp } from "./glob";
+import { loadProjectConfig } from "./project-config";
 
 // git diff 对二进制文件输出的标记前缀
 const BINARY_MARKER = "Binary files";
@@ -128,7 +128,7 @@ export async function filterFiles(
   entries: DiffEntry[],
   options: FilterOptions = {},
 ): Promise<DiffEntry[]> {
-  const configExcludes = options.cwd ? await loadConfigExcludes(options.cwd) : [];
+  const configExcludes = options.cwd ? (await loadProjectConfig(options.cwd)).exclude : [];
   // 合并 CLI --exclude 和配置文件中的排除模式
   const userPatterns = [...(options.excludePatterns ?? []), ...configExcludes];
 
@@ -174,17 +174,6 @@ function isCodeFile(path: string): boolean {
   const ext = extname(filename).toLowerCase();
   if (!ext) return false;
   return CODE_EXTENSIONS.has(ext);
-}
-
-/** 从 .diff-sense/rules.json 读取排除模式，文件不存在时返回空数组 */
-async function loadConfigExcludes(cwd: string): Promise<string[]> {
-  try {
-    const raw = await readFile(`${cwd}/.diff-sense/rules.json`, "utf-8");
-    const config = JSON.parse(raw) as { exclude?: string[] };
-    return config.exclude ?? [];
-  } catch {
-    return [];
-  }
 }
 
 // 导出内部函数供测试
