@@ -26,8 +26,10 @@ interface RunReviewAgentOptions {
   onStepEnd?: (info: { stepNumber: number }) => void;
 }
 
-/** 创建 ToolLoopAgent 审查一个语义分组，收集 findings 后返回结果 */
-export async function runReviewAgent(options: RunReviewAgentOptions): Promise<ReviewResult> {
+/** 创建 ToolLoopAgent 审查一个语义分组，收集 findings 后返回结果（耗时由调用方统计整次审查） */
+export async function runReviewAgent(
+  options: RunReviewAgentOptions,
+): Promise<Pick<ReviewResult, "findings" | "totalTokens">> {
   const { model, entries, others, cwd, rules, readNewFile, background, onStepEnd } = options;
   // findings 数组由 code_comment 工具的 execute 回调写入，写入前先锚定行号
   const findings: Finding[] = [];
@@ -42,8 +44,6 @@ export async function runReviewAgent(options: RunReviewAgentOptions): Promise<Re
     // 两个停止条件：Agent 调用 task_done 信号完成，或达到 30 步硬上限防止无限循环
     stopWhen: [hasToolCall("task_done"), isStepCount(30)],
   });
-
-  const start = Date.now();
 
   const result = await agent.generate({
     prompt: buildUserPrompt(
@@ -64,6 +64,5 @@ export async function runReviewAgent(options: RunReviewAgentOptions): Promise<Re
     findings,
     // AI SDK 的 totalTokens 可能为 undefined（部分 provider 不返回），兜底为 0
     totalTokens: result.usage.totalTokens ?? 0,
-    durationMs: Date.now() - start,
   };
 }

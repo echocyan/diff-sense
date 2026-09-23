@@ -9,10 +9,8 @@ export const GROUPING_MIN_FILES = 4;
 /** 每组文件数上限 */
 export const MAX_FILES_PER_GROUP = 10;
 
-/** 分组提示词期望的输出结构：`[{label, files}]`，files 为文件索引 */
-const groupingResponseSchema = z.array(
-  z.object({ label: z.string(), files: z.array(z.number().int()) }),
-);
+/** 分组提示词输出中的一个分组：`{label, files}`，files 为文件索引；索引逐个校验，此处不限类型 */
+const groupSchema = z.object({ label: z.string(), files: z.array(z.unknown()) });
 
 /** 语义分组结果 */
 export interface GroupingResult {
@@ -55,19 +53,21 @@ export async function groupFiles(
 /**
  * 解析分组提示词的输出
  *
- * 容忍 JSON 前后的说明文字与代码围栏；丢弃重复与越界索引，未分配的文件各成一组，
- * 超过 {@link MAX_FILES_PER_GROUP} 的组按上限拆分。无法解析时退化为单文件组
+ * 容忍 JSON 前后的说明文字与代码围栏；丢弃结构不符的组以及非整数、重复与越界索引，
+ * 未分配的文件各成一组，超过 {@link MAX_FILES_PER_GROUP} 的组按上限拆分。
+ * 找不到分组数组时退化为单文件组
  */
 export function parseGroups(text: string, entries: DiffEntry[]): FileGroup[] {
-  const parsed = groupingResponseSchema.safeParse(extractJsonArray(text));
-  if (!parsed.success) return singleFileGroups(entries);
-
   const assigned = new Set<number>();
   const groups: FileGroup[] = [];
-  for (const { label, files } of parsed.data) {
+  for (const item of extractGroupArray(text)) {
+    const parsed = groupSchema.safeParse(item);
+    if (!parsed.success) continue;
+    const { label, files } = parsed.data;
     // 逐个登记，同一组内的重复索引也只保留第一次
     const indices: number[] = [];
     for (const i of files) {
+      if (typeof i !== "number" || !Number.isInteger(i)) continue;
       if (i < 0 || i >= entries.length || assigned.has(i)) continue;
       assigned.add(i);
       indices.push(i);
@@ -81,16 +81,34 @@ export function parseGroups(text: string, entries: DiffEntry[]): FileGroup[] {
   return [...groups, ...singleFileGroups(unassigned)];
 }
 
-/** 截取文本中第一个 `[` 到最后一个 `]` 之间的内容并解析为 JSON，失败时返回 undefined */
-function extractJsonArray(text: string): unknown {
-  const start = text.indexOf("[");
-  const end = text.lastIndexOf("]");
-  if (start < 0 || end < start) return undefined;
+/**
+ * 从文本中找出分组数组：元素均为对象的非空 JSON 数组
+ *
+ * 依次尝试每个 `[` 起点，终点从最后一个 `]` 向前，取第一个符合条件的片段，
+ * 从而跳过说明文字中的方括号（如「文件 [0] 与 [1]」）。找不到时返回空数组
+ */
+function extractGroupArray(text: string): unknown[] {
+  for (let start = text.indexOf("["); start >= 0; start = text.indexOf("[", start + 1)) {
+    for (let end = text.lastIndexOf("]"); end > start; end = text.lastIndexOf("]", end - 1)) {
+      const value = tryParseJson(text.slice(start, end + 1));
+      if (Array.isArray(value) && value.length > 0 && value.every(isPlainObject)) return value;
+    }
+  }
+  return [];
+}
+
+/** 解析 JSON，失败时返回 undefined */
+function tryParseJson(text: string): unknown {
   try {
-    return JSON.parse(text.slice(start, end + 1));
+    return JSON.parse(text);
   } catch {
     return undefined;
   }
+}
+
+/** 是否为普通对象（非 null、非数组） */
+function isPlainObject(value: unknown): boolean {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** 每个文件单独成组，label 为文件路径 */

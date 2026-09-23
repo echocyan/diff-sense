@@ -55,6 +55,25 @@ describe("parseGroups", () => {
     expect(paths(groups)).toEqual([["f0.ts", "f1.ts", "f2.ts", "f3.ts"]]);
   });
 
+  it("跳过说明文字中不是分组数组的方括号", () => {
+    const groups = parseGroups(
+      '文件 [0] 与 [1] 相关：\n[{"label":"a","files":[0,1]},{"label":"b","files":[2,3]}]\n见 [注]',
+      entries(4),
+    );
+    expect(paths(groups)).toEqual([
+      ["f0.ts", "f1.ts"],
+      ["f2.ts", "f3.ts"],
+    ]);
+  });
+
+  it("只丢弃非整数索引与结构不符的组，其余分组保留", () => {
+    const groups = parseGroups(
+      '[{"label":"a","files":[0,"1",1.5,1]},{"files":[2]},{"label":"c","files":[3,4]}]',
+      entries(5),
+    );
+    expect(paths(groups)).toEqual([["f0.ts", "f1.ts"], ["f3.ts", "f4.ts"], ["f2.ts"]]);
+  });
+
   it("JSON 无法解析或结构不符时退化为单文件组", () => {
     for (const text of ["not json", '{"label":"x"}', '[{"label":1,"files":"0"}]']) {
       expect(paths(parseGroups(text, entries(4)))).toEqual([

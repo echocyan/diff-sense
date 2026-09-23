@@ -50,7 +50,7 @@ _Avoid_: Policy, guideline, check
 _Avoid_: Batch, chunk, partition
 
 **分组提示词 (Grouping Prompt)**:
-将文件聚类为语义分组的 LLM 调用。输入是文件元数据列表，输出是 JSON 数组 `[{label, files}]`（files 为文件索引）。重复与越界索引被丢弃，未分配的文件各成一组；输出无法解析或调用失败时，退化为每个文件单独成组。
+将文件聚类为语义分组的 LLM 调用。输入是文件元数据列表，输出是 JSON 数组 `[{label, files}]`（files 为文件索引）。结构不符的组以及非整数、重复与越界索引被丢弃，未分配的文件各成一组；输出中找不到分组数组或调用失败时，退化为每个文件单独成组。
 
 ### Agent
 
@@ -75,7 +75,7 @@ _Avoid_: Reviewer, bot
 ### 集成 (Integration)
 
 **进度 (Progress)**:
-审查过程中写到 stderr 的状态提示（spinner：开始 → 第 N 步 → 完成 / 失败），始终显示，不可关闭。审查结果只写 stdout，因此 `--format json` 的输出可直接交给其他程序解析。
+审查过程中写到 stderr 的状态提示（spinner：开始 → 已完成 k/n 组，共 N 步 → 完成 / 失败），始终显示，不可关闭。审查结果只写 stdout，因此 `--format json` 的输出可直接交给其他程序解析。
 _Avoid_: Audience（已移除的 `--audience` 参数）
 
 **Skill**:
