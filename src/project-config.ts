@@ -26,7 +26,7 @@ export async function loadProjectConfig(cwd: string): Promise<ProjectConfig> {
   try {
     raw = await readFile(join(cwd, CONFIG_PATH), "utf-8");
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") return { exclude: [], rules: [] };
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return ProjectConfigSchema.parse({});
     throw err;
   }
 
