@@ -70,6 +70,28 @@ describe("anchor", () => {
     expect(loc).toEqual({ path: "src/a.ts", line: 11, endLine: 12 });
   });
 
+  it("片段混合上下文行与 + 行时仍可匹配", async () => {
+    const snippet = " const keep = 1;\n+const a = foo(1, 2);";
+    const loc = await anchor(snippet, "src/a.ts", [entry("src/a.ts")], noFile);
+    expect(loc).toEqual({ path: "src/a.ts", line: 10, endLine: 11 });
+  });
+
+  it("以 + 开头的真实代码行按原样匹配", async () => {
+    const diff = `@@ -1,1 +1,2 @@\n const s = "a"\n++ "b";\n`;
+    const loc = await anchor('+ "b";', "src/a.ts", [entry("src/a.ts", diff)], noFile);
+    expect(loc).toEqual({ path: "src/a.ts", line: 2, endLine: 2 });
+  });
+
+  it("path 带 ./ 前缀时规范化后匹配", async () => {
+    const loc = await anchor("const b = bar();", "./src/a.ts", [entry("src/a.ts")], noFile);
+    expect(loc).toEqual({ path: "src/a.ts", line: 12, endLine: 12 });
+  });
+
+  it("path 不在送审文件中时按片段推断", async () => {
+    const loc = await anchor("const b = bar();", "a.ts", [entry("src/a.ts")], noFile);
+    expect(loc).toEqual({ path: "src/a.ts", line: 12, endLine: 12 });
+  });
+
   it("未传 path 时按匹配到的文件推断路径", async () => {
     const other = `@@ -1,1 +1,2 @@\n ctx\n+const only = here();\n`;
     const entries = [entry("src/a.ts"), entry("src/b.ts", other)];
