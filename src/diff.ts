@@ -31,10 +31,19 @@ export async function getDiff(mode: DiffMode, cwd: string): Promise<DiffEntry[]>
 /** 解析 cwd 所在 git 仓库的根目录；diff 中的路径均相对该目录 */
 export async function getRepoRoot(cwd: string): Promise<string> {
   try {
-    const { stdout } = await exec("git", ["rev-parse", "--show-toplevel"], { cwd });
+    // 固定英文输出，便于识别「非仓库」错误
+    const { stdout } = await exec("git", ["rev-parse", "--show-toplevel"], {
+      cwd,
+      env: { ...process.env, LC_ALL: "C" },
+    });
     return stdout.trim();
-  } catch {
-    throw new Error(`${cwd} 不在 git 仓库中，请在仓库目录内运行`);
+  } catch (err) {
+    // 仅在 git 明确报告非仓库时给出提示，其他失败（git 未安装、目录不存在等）保留原始错误
+    const stderr = (err as { stderr?: string }).stderr ?? "";
+    if (/not a git repository/i.test(stderr)) {
+      throw new Error(`${cwd} 不在 git 仓库中，请在仓库目录内运行`, { cause: err });
+    }
+    throw err;
   }
 }
 

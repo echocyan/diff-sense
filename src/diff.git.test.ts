@@ -61,4 +61,11 @@ describe("getRepoRoot", () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+
+  it("其他失败保留原始错误，不误报为非仓库", async () => {
+    const missing = join(tmpdir(), "diff-sense-missing-dir-xyz");
+    const err = await getRepoRoot(missing).catch((e: Error) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).not.toContain("不在 git 仓库中");
+  });
 });
