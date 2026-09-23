@@ -64,7 +64,7 @@ CLI (src/index.ts → src/commands/review.ts)
 
 ### 三个集成面
 
-1. **CLI** — Commander.js + @clack/prompts（spinner）+ picocolors
+1. **CLI** — Commander.js + @clack/prompts（spinner、config 向导）+ picocolors
 2. **Skill** — 源文件在 `skills/` 下（供其他 AI Agent 调用），经 skills.sh 分发，使用者安装到 `.agents/`、`.claude/` 等目录
 3. **GitHub Action** — Composite Action（`action.yml`）
 
