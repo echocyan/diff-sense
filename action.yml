@@ -66,6 +66,9 @@ runs:
         FROM_REF: ${{ inputs.from_ref }}
         TO_REF: ${{ inputs.to_ref }}
         PR_NUMBER: ${{ github.event.pull_request.number }}
+        EVENT_NAME: ${{ github.event_name }}
+        HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        REPO: ${{ github.repository }}
       run: |
         set -euo pipefail
         # 先校验再审查，避免审查完成后才发现无处发布而白白消耗 token
@@ -73,19 +76,29 @@ runs:
           echo "::error::diff-sense Action 需要在 pull_request 事件中运行，以便发布 PR 评论"
           exit 1
         fi
+        # pull_request 事件中来自 fork 的 PR 拿不到 secrets，github.token 也只读，审查与发布都无法完成
+        if [ "$EVENT_NAME" = "pull_request" ] && [ "$HEAD_REPO" != "$REPO" ]; then
+          echo "::notice::跳过来自 fork（$HEAD_REPO）的 PR：pull_request 事件中无法读取 secrets，也无权发布评论"
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
         if [ -z "$FROM_REF" ] || [ -z "$TO_REF" ]; then
           echo "::error::缺少 from_ref 或 to_ref"
           exit 1
         fi
-        if ! head=$(git rev-parse --verify "$TO_REF^{commit}") \
-          || ! base=$(git merge-base "$FROM_REF" "$head"); then
-          echo "::error::无法解析 $FROM_REF 与 $TO_REF 的共同祖先：请在 actions/checkout 中设置 fetch-depth: 0"
+        if ! head=$(git rev-parse --verify --quiet "$TO_REF^{commit}"); then
+          echo "::error::无法解析 to_ref（$TO_REF）：请确认该提交已被 actions/checkout 拉取（fetch-depth: 0）"
+          exit 1
+        fi
+        if ! base=$(git merge-base "$FROM_REF" "$head"); then
+          echo "::error::无法计算 $FROM_REF 与 $TO_REF 的共同祖先：请在 actions/checkout 中设置 fetch-depth: 0"
           exit 1
         fi
         echo "base=$base" >> "$GITHUB_OUTPUT"
         echo "head=$head" >> "$GITHUB_OUTPUT"
 
     - name: 运行 diff-sense 审查
+      if: steps.range.outputs.skip != 'true'
       shell: bash
       env:
         DIFF_SENSE_PROVIDER: ${{ inputs.provider }}
@@ -107,6 +120,7 @@ runs:
         npx --yes "diff-sense@$version" "${args[@]}" > "$RUNNER_TEMP/diff-sense-review.json"
 
     - name: 发布审查评论
+      if: steps.range.outputs.skip != 'true'
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
@@ -116,15 +130,27 @@ runs:
       run: |
         set -euo pipefail
         result="$RUNNER_TEMP/diff-sense-review.json"
-        if jq -e '.review != null' "$result" > /dev/null; then
-          # commit_id 固定为被审查的提交，审查期间有新推送时评论仍落在正确的行上
-          jq --arg sha "$HEAD" '.review + {commit_id: $sha}' "$result" \
-            | gh api --method POST "repos/$REPO/pulls/$PR_NUMBER/reviews" --input - > /dev/null
-          echo "已发布 $(jq '.review.comments | length' "$result") 条行内评论"
-        fi
+        # 先发摘要：行内评论发布失败时不会连带丢失摘要中的发现
         if jq -e '.summary != null' "$result" > /dev/null; then
           jq -r '.summary' "$result" | gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file -
           echo "已发布摘要评论"
+        fi
+        if jq -e '.review != null' "$result" > /dev/null; then
+          # commit_id 固定为被审查的提交，审查期间有新推送时评论仍落在正确的行上
+          if jq --arg sha "$HEAD" '.review + {commit_id: $sha}' "$result" \
+            | gh api --method POST "repos/$REPO/pulls/$PR_NUMBER/reviews" --input - > /dev/null; then
+            echo "已发布 $(jq '.review.comments | length' "$result") 条行内评论"
+          else
+            # 本地 diff 与 GitHub 的 PR diff 不一致（如重命名检测、大文件折叠）时 Review API 会拒绝整个请求，
+            # 此时改为普通评论列出这些发现，不让它们丢失
+            echo "::warning::行内评论发布失败，改为以普通评论发布"
+            jq -r '
+              "## diff-sense 审查发现\n\nGitHub 未接受行内评论，以下发现改为在此列出：\n\n"
+              + ([.review.comments[]
+                  | "### `\(.path):\(if .start_line then "\(.start_line)-" else "" end)\(.line)`\n\n\(.body)"]
+                 | join("\n\n"))
+            ' "$result" | gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file -
+          fi
         fi
         if jq -e '.review == null and .summary == null' "$result" > /dev/null; then
           echo "diff-sense 未发现问题"

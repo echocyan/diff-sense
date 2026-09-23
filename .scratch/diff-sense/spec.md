@@ -79,7 +79,7 @@ The system is split into two layers:
   - `--from <ref> --to <ref>` (range mode)
   - `--commit <sha>` (commit mode)
   - (no flags = workspace mode: staged + unstaged + untracked)
-  - `--format text|json` (default: text)
+  - `--format text|json|github` (default: text; `github` is the PR comment payload used by the GitHub Action)
   - Progress (spinner) is always shown and written to stderr; only the result goes to stdout, so `--format json` output can be piped directly
   - `--background <text>` (business context injected into review prompt)
   - `--concurrency <n>` (default: 4)
@@ -170,8 +170,9 @@ Matching only considers files under review. `path` is normalised (leading `./` s
 - `action.yml` at repository root defines the Action
 - Inputs: `provider`, `model`, `api_key` (from secrets), `from_ref`, `to_ref`, `concurrency`, `background`
 - The action: installs Node.js, reviews from the merge-base of `from_ref` and `to_ref` (defaults: the PR base / head SHAs; requires `fetch-depth: 0`) with `npx diff-sense review --from ... --to ... --format github`, then posts the resulting payload via `gh` (`review` → Pull Request Review API with `commit_id` pinned to the reviewed commit; `summary` → PR conversation comment)
-- Inline comments for anchored findings (using the Pull Request Review API)
-- Summary comment for unanchored findings (`line=0`) aggregated as a Markdown list
+- Inline comments for findings whose whole range lies inside one hunk of the PR diff (using the Pull Request Review API)
+- Summary comment for every other finding (unanchored `line=0`, outside the hunks, or spanning hunks) aggregated as a Markdown list; posted before the review, and if the Review API rejects the inline comments they are posted as a plain PR comment instead, so no finding is lost
+- Fork PRs under the `pull_request` event are skipped up front with a notice (no secrets, read-only token)
 - Uses `${{ github.token }}` for PR API access
 
 ### Skill Integration

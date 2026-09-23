@@ -22,6 +22,8 @@
 - 遗留（2026-09-23）：
   - diff-sense 尚未发布到 npm（工单 14），发布前 Action 中的 `npx diff-sense@<version>` 不可用；仅以桩替换 `npx` / `gh` 在本地验证了三个脚本步骤，未在真实 PR 上运行。
   - 每次推送都会发布新的 review 与摘要评论，未做去重或更新旧评论。
-  - 来自 fork 的 PR 拿不到 secrets，且 `github.token` 只读，无法审查与发布。
+  - 来自 fork 的 PR（`pull_request` 事件）拿不到 secrets，且 `github.token` 只读，目前在前置步骤中提示并跳过，不支持审查。
   - 建议代码以普通代码块展示，未使用 GitHub 的 suggestion 块（需确认 suggestionCode 恰好替换锚定行）。
   - 摘要评论未报告 token 用量与耗时（见上方工单 10 的评论）。
+- 审查修复（2026-09-23，两轴审查）：先发摘要评论再发 Review，Review 被拒绝（本地 diff 与 GitHub 的 PR diff 不一致）时发出警告并把行内评论改为普通评论发布，不再连带丢失全部发现；Review 带上 `body`（COMMENT 事件文档要求）；`pull_request` 事件中的 fork PR 在前置步骤提示并跳过，不再白白运行审查；`to_ref` 无法解析与 merge-base 失败分别报错；摘要中含反引号的路径不再截断行内代码；`text` 与 `github` 输出共用 `lineRange`；spec 中 `--format` 与摘要评论的描述与实现同步。
+- 审查未采纳（2026-09-23，两轴审查）：用户故事 29 的「审查力度」仅以 `concurrency` 体现，与工单的输入列表一致；回退评论中的路径未做反引号转义（仅在路径含反引号且 Review 被拒绝时出现）。
