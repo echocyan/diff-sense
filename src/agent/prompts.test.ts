@@ -36,4 +36,16 @@ describe("buildUserPrompt", () => {
     const prompt = buildUserPrompt([{ ...ENTRY, path: 'a"b&c.ts' }], { checklist: "C" });
     expect(prompt).toContain('<file path="a&quot;b&amp;c.ts">');
   });
+
+  it("组外变更文件以元数据列在 <review_files> 之前的 <other_changed_files> 中", () => {
+    const other: DiffEntry = { ...ENTRY, path: "src/b.ts", status: "added", insertions: 5 };
+    const prompt = buildUserPrompt([ENTRY], { checklist: "C" }, [other]);
+    const block = prompt.match(/<other_changed_files>\n([\s\S]*?)\n<\/other_changed_files>/)?.[1];
+    expect(block).toBe("ADDED src/b.ts (+5/-0)");
+    expect(prompt.indexOf("<other_changed_files>")).toBeLessThan(prompt.indexOf("<review_files>"));
+  });
+
+  it("没有组外变更文件时不输出 <other_changed_files>", () => {
+    expect(buildUserPrompt([ENTRY], { checklist: "C" })).not.toContain("other_changed_files");
+  });
 });

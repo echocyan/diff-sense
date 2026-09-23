@@ -48,7 +48,7 @@ Capabilities:
 - Use task_done when you have finished reviewing all files
 
 Rules:
-- Only comment on files listed in <review_files>
+- Only comment on files listed in <review_files>; files in <other_changed_files> were changed in the same update but belong to other review groups — use them as context only
 - Focus on real bugs, security issues, and significant problems
 - Do NOT comment on deleted code or unchanged code
 - Do NOT report stylistic nitpicks unless they indicate a real problem
@@ -64,8 +64,18 @@ export interface UserTask {
   background?: string;
 }
 
-/** 构建用户提示词，将 diff 条目包装为 XML 结构化格式供 LLM 解析 */
-export function buildUserPrompt(entries: DiffEntry[], task: UserTask): string {
+/**
+ * 构建用户提示词，将 diff 条目包装为 XML 结构化格式供 LLM 解析
+ *
+ * @param entries - 本组待审查文件
+ * @param task - `<user_task>` 区块内容
+ * @param others - 组外变更文件，仅以元数据列在 `<other_changed_files>` 中
+ */
+export function buildUserPrompt(
+  entries: DiffEntry[],
+  task: UserTask,
+  others: DiffEntry[] = [],
+): string {
   // 每个文件的 diff 包装为 <file path="..."> 标签，便于 LLM 按文件定位
   const fileBlocks = entries
     .map((e) => `<file path="${escapeAttr(e.path)}">\n${e.diff}\n</file>`)
@@ -80,7 +90,15 @@ export function buildUserPrompt(entries: DiffEntry[], task: UserTask): string {
     "Review the code changes in <review_files> above. Report each finding with code_comment. When finished, call task_done.",
   );
 
+  const blocks: string[] = [];
+  if (others.length > 0) {
+    const otherList = others.map(describeFile).join("\n");
+    blocks.push(
+      `Other files changed in this update (not in this review group):\n<other_changed_files>\n${otherList}\n</other_changed_files>`,
+    );
+  }
   return [
+    ...blocks,
     `<review_files>\n${fileBlocks}\n</review_files>`,
     `<user_task>\n${sections.join("\n\n")}\n</user_task>`,
   ].join("\n\n");
