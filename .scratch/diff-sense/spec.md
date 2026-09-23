@@ -68,7 +68,7 @@ The system is split into two layers:
 - **CLI framework**: Commander.js
 - **Terminal interaction**: @clack/prompts (interactive wizard + spinner)
 - **Terminal colors**: picocolors
-- **Runtime**: Node.js 22.12+ (`engines`; the floor set by `commander` and the AI SDK packages)
+- **Runtime**: Node.js, minimum version declared once in `package.json` `engines` (the floor set by `commander` and the AI SDK packages); the tsup build target is derived from it
 - **Build tool**: tsup (single-file bundle; runtime dependencies stay external and are installed by npm)
 - **Test framework**: Vitest
 - **Concurrency**: `p-limit` for parallel group review (default concurrency: 4)
