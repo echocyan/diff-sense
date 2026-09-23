@@ -3,7 +3,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
-import { chmod, mkdir, writeFile } from "node:fs/promises";
+import { chmod, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { z } from "zod";
@@ -39,22 +39,46 @@ export async function readConfigFile(path = CONFIG_FILE): Promise<Settings> {
   return readJsonConfig(path, SettingsSchema);
 }
 
-/** 写入单个配置项；文件含 API Key，权限设为仅所有者可读写 */
+/**
+ * 整体写入配置文件；文件含 API Key，权限为仅所有者可读写
+ *
+ * 先以 0600 写入同目录临时文件再重命名替换，避免密钥在收紧权限前以旧权限落盘
+ */
+export async function writeConfigFile(settings: Settings, path = CONFIG_FILE) {
+  const dir = dirname(path);
+  await mkdir(dir, { recursive: true, mode: 0o700 });
+  // mkdir 不会修改已存在目录的权限，显式收紧
+  await chmod(dir, 0o700);
+  const tmp = `${path}.${process.pid}.tmp`;
+  try {
+    await writeFile(tmp, JSON.stringify(settings, null, 2) + "\n", { mode: 0o600 });
+    await rename(tmp, path);
+  } catch (err) {
+    await rm(tmp, { force: true });
+    throw err;
+  }
+}
+
+/** 写入单个配置项，值去除首尾空白且不能为空 */
 export async function setConfigValue(key: string, value: string, path = CONFIG_FILE) {
+  const k = toConfigKey(key);
+  const v = value.trim();
+  if (!v) throw new Error(`${k} 不能为空`);
   const settings = await readConfigFile(path);
-  const k = assertOneOf(key, CONFIG_KEYS, `未知配置项 ${key}`);
-  if (k === "provider")
-    settings.provider = assertOneOf(value, PROVIDERS, `不支持的 provider：${value}`);
-  else settings[k] = value;
-  await mkdir(dirname(path), { recursive: true, mode: 0o700 });
-  await writeFile(path, JSON.stringify(settings, null, 2) + "\n", { mode: 0o600 });
-  // 文件已存在时 writeFile 不改权限，显式收紧
-  await chmod(path, 0o600);
+  if (k === "provider") settings.provider = assertOneOf(v, PROVIDERS, `不支持的 provider：${v}`);
+  else settings[k] = v;
+  await writeConfigFile(settings, path);
 }
 
 /** 读取单个配置项，未设置时返回 undefined */
 export async function getConfigValue(key: string, path = CONFIG_FILE) {
-  return (await readConfigFile(path))[assertOneOf(key, CONFIG_KEYS, `未知配置项 ${key}`)];
+  const k = toConfigKey(key);
+  return (await readConfigFile(path))[k];
+}
+
+/** 校验配置项名称 */
+function toConfigKey(key: string): ConfigKey {
+  return assertOneOf(key, CONFIG_KEYS, `未知配置项 ${key}`);
 }
 
 /** 各配置项对应的环境变量，优先级高于配置文件 */

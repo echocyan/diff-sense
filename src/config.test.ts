@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtemp, readFile, writeFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   readConfigFile,
+  writeConfigFile,
   setConfigValue,
   getConfigValue,
   resolveSettings,
@@ -38,6 +39,33 @@ describe("配置文件读写", () => {
   it("配置文件仅所有者可读写", async () => {
     await setConfigValue("apiKey", "sk-secret", path);
     expect((await stat(path)).mode & 0o777).toBe(0o600);
+  });
+
+  it("已存在的宽松权限目录与文件在写入时收紧", async () => {
+    await mkdir(join(dir, ".diff-sense"), { mode: 0o755 });
+    await writeFile(path, "{}", { mode: 0o644 });
+    await setConfigValue("apiKey", "sk-secret", path);
+    expect((await stat(path)).mode & 0o777).toBe(0o600);
+    expect((await stat(join(dir, ".diff-sense"))).mode & 0o777).toBe(0o700);
+  });
+
+  it("set 去除首尾空白，拒绝空值", async () => {
+    await setConfigValue("model", "  m1 ", path);
+    expect(await getConfigValue("model", path)).toBe("m1");
+    await expect(setConfigValue("model", "  ", path)).rejects.toThrow("model 不能为空");
+  });
+
+  it("先校验配置项名称，再读取配置文件", async () => {
+    await setConfigValue("model", "m", path);
+    await writeFile(path, "{ broken");
+    await expect(setConfigValue("baseURL", "x", path)).rejects.toThrow("未知配置项 baseURL");
+    await expect(getConfigValue("baseURL", path)).rejects.toThrow("未知配置项 baseURL");
+  });
+
+  it("writeConfigFile 整体替换配置", async () => {
+    await setConfigValue("apiKey", "old", path);
+    await writeConfigFile({ provider: "openai", model: "gpt-5" }, path);
+    expect(await readConfigFile(path)).toEqual({ provider: "openai", model: "gpt-5" });
   });
 
   it("未设置的项 get 返回 undefined", async () => {
