@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { resolveRule, resolveGroupRules, loadRules } from "./matcher";
-import { DEFAULT_RULE } from "./builtin";
+import { BUILTIN_RULES, DEFAULT_RULE } from "./builtin";
 import type { Rule } from "../types";
 
 const RULES: Rule[] = [
@@ -23,6 +23,19 @@ describe("resolveRule", () => {
 
   it("路径匹配大小写不敏感", () => {
     expect(resolveRule(".GitHub/Workflows/CI.YML", RULES)).toBe("GHA");
+  });
+});
+
+describe("内置规则路由", () => {
+  it.each([
+    ["docker/Dockerfile", "Running as root"],
+    ["Dockerfile.prod", "Running as root"],
+    ["build/app.dockerfile", "Running as root"],
+    ["Dockerfile.dev.yml", "spelling errors in YAML keys"],
+    [".github/workflows/ci.yml", "pull_request_target"],
+    ["types/stub.pyi", "Mutable default arguments"],
+  ])("%s 命中对应规则", (path, marker) => {
+    expect(resolveRule(path, BUILTIN_RULES)).toContain(marker);
   });
 });
 

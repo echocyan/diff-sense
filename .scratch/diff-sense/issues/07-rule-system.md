@@ -16,3 +16,5 @@
 ## Comments
 
 - 实现记录（2026-09-23）：`.diff-sense/rules.json` 的 `rules` 格式为 `[{ "pattern": "<glob>", "rule": "<text>" }]`，数组顺序即优先级，项目规则整体排在内置规则之前。内置规则文本取自 `docs/research/ocr-builtin-rules.md` 第 6 节。业务上下文由 `<background>` 标签改为 `<user_task>` 内的 `### Requirement Background` 区域（与 OCR 模板一致）。spec 中 rules.json 的 `include` 字段不在本工单范围内，尚未实现。
+
+- 审查修复（2026-09-23）：Dockerfile 规则移到通用 YAML 之后，`Dockerfile.dev.yml` 等带真实扩展名的文件按扩展名归入 YAML 规则；配套地文件过滤器放行 `Dockerfile.prod` 等变体与 `.pyi`（见 ticket 06）。

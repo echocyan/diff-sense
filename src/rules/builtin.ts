@@ -201,7 +201,8 @@ const YAML = `Check for spelling errors in YAML keys. Do not flag YAML values.`;
 
 /**
  * 内置规则：按声明顺序先匹配者优先，具体模式必须排在通用模式之前
- * （如 GitHub Actions 工作流先于通用 YAML）
+ * （如 GitHub Actions 工作流先于通用 YAML）。
+ * Dockerfile 排在 YAML 之后，使 `Dockerfile.dev.yml` 这类带真实扩展名的文件按扩展名归类
  */
 export const BUILTIN_RULES: Rule[] = [
   { pattern: "**/*.{ts,tsx,js,jsx,mjs,cjs,mts,cts}", rule: TYPESCRIPT },
@@ -209,7 +210,7 @@ export const BUILTIN_RULES: Rule[] = [
   { pattern: "**/*.go", rule: GO },
   { pattern: "**/*.java", rule: JAVA },
   { pattern: "**/*.rs", rule: RUST },
-  { pattern: "**/{Dockerfile,Dockerfile.*,*.dockerfile}", rule: DOCKERFILE },
   { pattern: ".github/workflows/**/*.{yaml,yml}", rule: GITHUB_ACTIONS },
   { pattern: "**/*.{yaml,yml}", rule: YAML },
+  { pattern: "**/{Dockerfile,Dockerfile.*,*.dockerfile}", rule: DOCKERFILE },
 ];
