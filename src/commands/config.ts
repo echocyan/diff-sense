@@ -7,6 +7,7 @@ import {
   getConfigValue,
   readConfigFile,
   setConfigValue,
+  writeConfigFile,
   type Provider,
 } from "../config";
 
@@ -72,16 +73,21 @@ async function runWizard() {
   });
   if (isCancel(model)) return abort();
 
+  // 已保存的 apiKey 属于原提供商，切换提供商后不再沿用
+  const savedKey = provider === current.provider ? current.apiKey : undefined;
   const apiKey = await password({
-    message: current.apiKey
+    message: savedKey
       ? "API Key（留空沿用已保存的值）"
       : `API Key（留空则读取环境变量 ${provider.toUpperCase()}_API_KEY）`,
   });
   if (isCancel(apiKey)) return abort();
 
-  await setConfigValue("provider", provider);
-  await setConfigValue("model", model.trim());
-  if (apiKey) await setConfigValue("apiKey", apiKey);
+  // 一次性写入，避免中途失败留下提供商与模型不匹配的配置
+  await writeConfigFile({
+    provider,
+    model: model.trim(),
+    apiKey: apiKey.trim() || savedKey,
+  });
   outro(`已保存到 ${CONFIG_FILE}`);
 }
 

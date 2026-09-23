@@ -84,7 +84,7 @@ The system is split into two layers:
   - `--background <text>` (business context injected into review prompt)
   - `--concurrency <n>` (default: 4)
   - `--exclude <patterns>` (additional exclude globs)
-- `diff-sense config` — interactive wizard when no args (built with @clack/prompts: provider → model → API key; an empty API key keeps the saved one); `config set <key> <value>` / `config get <key>` for non-interactive (`get` exits 1 when the key is unset)
+- `diff-sense config` — interactive wizard when no args (built with @clack/prompts: provider → model → API key; an empty API key keeps the saved one only when the provider is unchanged; all answers are written in one atomic write); `config set <key> <value>` / `config get <key>` for non-interactive (`get` exits 1 when the key is unset)
 - `diff-sense version` — print version
 
 ### Configuration System
