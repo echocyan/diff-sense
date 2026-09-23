@@ -38,7 +38,7 @@ CLI (src/index.ts → src/commands/review.ts)
      │                全文件扫描经 readNewFile() (src/diff.ts) 读取
      ├── prompts.ts   系统/用户提示词
      └── tools.ts     code_comment / file_read / code_search / task_done
- → formatText() / formatJson() (src/output/) ← --format text|json；进度（spinner）写 stderr，--audience agent 时静默
+ → formatText() / formatJson() (src/output/) ← --format text|json；进度（spinner）始终显示，写 stderr
 ```
 
 ### 核心类型 (`src/types.ts`)

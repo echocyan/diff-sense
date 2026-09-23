@@ -74,9 +74,9 @@ _Avoid_: Reviewer, bot
 
 ### 集成 (Integration)
 
-**受众 (Audience)**:
-审查输出的消费者身份。二选一：human（显示进度）或 agent（静默，不显示进度，供其他工具调用）。受众只决定是否显示进度，输出格式由 `--format`（text / json）单独决定；机器消费时通常同时指定 `--format json --audience agent`。
-_Avoid_: Mode, target
+**进度 (Progress)**:
+审查过程中写到 stderr 的状态提示（spinner：开始 → 第 N 步 → 完成 / 失败），始终显示，不可关闭。审查结果只写 stdout，因此 `--format json` 的输出可直接交给其他程序解析。
+_Avoid_: Audience（已移除的 `--audience` 参数）
 
 **Skill**:
 源文件位于仓库 `skills/` 下的 markdown 文件（经 skills.sh 分发，使用者安装到 `.agents/`、`.claude/` 等目录），指导其他 AI Agent 如何调用 diff-sense 并解读输出。返回按严重程度分组的 Markdown 审查摘要。

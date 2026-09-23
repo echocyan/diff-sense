@@ -5,12 +5,11 @@ import { review } from "../review";
 import { formatText } from "../output/text";
 import { formatJson } from "../output/json";
 import type { DiffMode } from "../diff";
-import { AUDIENCES, OUTPUT_FORMATS, type Audience, type OutputFormat } from "../types";
+import { OUTPUT_FORMATS, type OutputFormat } from "../types";
 
 /** review 子命令的 CLI 选项 */
 interface ReviewCliOptions {
   format: OutputFormat;
-  audience: Audience;
   background?: string;
   commit?: string;
   from?: string;
@@ -24,24 +23,19 @@ export function registerReviewCommand(program: Command) {
     .command("review")
     .description("审查代码变更")
     .addOption(new Option("--format <format>", "输出格式").choices(OUTPUT_FORMATS).default("text"))
-    .addOption(
-      new Option("--audience <audience>", "输出受众：agent 不显示进度")
-        .choices(AUDIENCES)
-        .default("human"),
-    )
     .option("--background <text>", "业务上下文")
     .option("--commit <sha>", "审查单个提交")
     .option("--from <ref>", "范围起点（需配合 --to）")
     .option("--to <ref>", "范围终点（需配合 --from）")
     .option("--exclude <pattern...>", "排除文件模式")
     .action(async (opts: ReviewCliOptions) => {
-      // 进度写到 stderr，stdout 只留审查结果（便于管道处理 JSON）；agent 受众不显示进度
-      const s = opts.audience === "human" ? spinner({ output: process.stderr }) : undefined;
+      // 进度写到 stderr，stdout 只留审查结果（便于管道处理 JSON）
+      const s = spinner({ output: process.stderr });
 
       try {
         const diffMode = resolveDiffMode(opts);
         const { model, settings } = await resolveModel();
-        s?.start(`使用 ${settings.provider}/${settings.model} 审查中...`);
+        s.start(`使用 ${settings.provider}/${settings.model} 审查中...`);
 
         const result = await review({
           model,
@@ -50,15 +44,15 @@ export function registerReviewCommand(program: Command) {
           background: opts.background,
           excludePatterns: opts.exclude,
           onStepEnd: ({ stepNumber }) => {
-            s?.message(`审查中...（第 ${stepNumber + 1} 步）`);
+            s.message(`审查中...（第 ${stepNumber + 1} 步）`);
           },
         });
 
-        s?.stop("审查完成");
+        s.stop("审查完成");
         console.log(opts.format === "json" ? formatJson(result) : formatText(result));
       } catch (err) {
-        // spinner 未启动（如参数校验失败）时 stop 不输出任何内容；agent 受众无 spinner
-        s?.stop("审查失败");
+        // spinner 未启动（如参数校验失败）时 stop 不输出任何内容
+        s.stop("审查失败");
         console.error(err instanceof Error ? err.message : String(err));
         process.exit(1);
       }

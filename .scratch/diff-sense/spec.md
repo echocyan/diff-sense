@@ -25,7 +25,7 @@ diff-sense 是一个轻量级的 AI 驱动代码审查 CLI 工具，用 TypeScri
 6. As a developer, I want to pass `--background "this PR refactors the payment module"` to provide context, so that the reviewer understands the intent behind the changes
 7. As a developer, I want to run `diff-sense review --format json` to get structured output, so that I can pipe it to other tools
 8. As a developer, I want to run `diff-sense review --format text` to get human-readable output, so that I can read findings easily in the terminal
-9. As a developer, I want to run `diff-sense review --audience agent` to suppress progress output, so that the tool works cleanly when called by other agents
+9. As a developer, I want progress to go to stderr and results to stdout, so that the tool works cleanly when called by other agents or piped to other tools (progress is always shown; there is no `--audience` flag)
 10. As a developer, I want to run `diff-sense config` without arguments to get an interactive setup wizard, so that I can configure my LLM provider on first use
 11. As a developer, I want to run `diff-sense config set provider anthropic` to configure non-interactively, so that I can script the setup
 12. As a developer, I want to set `DIFF_SENSE_PROVIDER` and `DIFF_SENSE_MODEL` environment variables, so that the tool works in CI without a config file
@@ -80,7 +80,7 @@ The system is split into two layers:
   - `--commit <sha>` (commit mode)
   - (no flags = workspace mode: staged + unstaged + untracked)
   - `--format text|json` (default: text)
-  - `--audience human|agent` (default: human; agent suppresses progress). Progress is written to stderr and only the result goes to stdout, so `--format json` output can be piped even in human mode
+  - Progress (spinner) is always shown and written to stderr; only the result goes to stdout, so `--format json` output can be piped directly
   - `--background <text>` (business context injected into review prompt)
   - `--concurrency <n>` (default: 4)
   - `--exclude <patterns>` (additional exclude globs)
@@ -168,7 +168,7 @@ Matching only considers files under review. `path` is normalised (leading `./` s
 
 - `action.yml` at repository root defines the Action
 - Inputs: `provider`, `model`, `api_key` (from secrets), `from_ref`, `to_ref`, `concurrency`, `background`
-- The action: installs Node.js, runs `npx diff-sense review --from ... --to ... --format json --audience agent`, parses JSON output, posts PR review comments via GitHub API
+- The action: installs Node.js, runs `npx diff-sense review --from ... --to ... --format json`, parses JSON output, posts PR review comments via GitHub API
 - Inline comments for anchored findings (using the Pull Request Review API)
 - Summary comment for unanchored findings (`line=0`) aggregated as a Markdown list
 - Uses `${{ github.token }}` for PR API access
@@ -179,7 +179,7 @@ Matching only considers files under review. `path` is normalised (leading `./` s
   1. Check if `diff-sense` CLI is installed (install via `npm install -g diff-sense` if not)
   2. Check if LLM is configured
   3. Extract business context from the current task
-  4. Run `diff-sense review --format json --audience agent --background "..."`
+  4. Run `diff-sense review --format json --background "..."`
   5. Parse JSON output, classify findings by severity
   6. Render Markdown summary with High / Medium / Low sections
 - Skill output is Markdown, not raw JSON — optimized for LLM consumption

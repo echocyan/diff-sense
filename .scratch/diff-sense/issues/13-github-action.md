@@ -1,8 +1,8 @@
 # 13: GitHub Action 集成
 
-**What to build:** 仓库根目录的 `action.yml` Composite Action。接收输入：`provider`、`model`、`api_key`（from secrets）、`from_ref`、`to_ref`、`concurrency`、`background`。Action 流程：安装 Node.js → `npx diff-sense review --from $from_ref --to $to_ref --format json --audience agent` → 解析 JSON 输出 → 通过 GitHub Pull Request Review API 发布行内评论（锚定发现，line > 0）→ 通过 GitHub API 发布摘要评论（未锚定发现，line = 0，聚合为 Markdown 列表）。使用 `${{ github.token }}` 访问 PR API。
+**What to build:** 仓库根目录的 `action.yml` Composite Action。接收输入：`provider`、`model`、`api_key`（from secrets）、`from_ref`、`to_ref`、`concurrency`、`background`。Action 流程：安装 Node.js → `npx diff-sense review --from $from_ref --to $to_ref --format json` → 解析 JSON 输出 → 通过 GitHub Pull Request Review API 发布行内评论（锚定发现，line > 0）→ 通过 GitHub API 发布摘要评论（未锚定发现，line = 0，聚合为 Markdown 列表）。使用 `${{ github.token }}` 访问 PR API。
 
-**Blocked by:** 10 (输出格式化 + 受众模式)
+**Blocked by:** 10 (输出格式化)
 
 **Status:** ready-for-agent
 
