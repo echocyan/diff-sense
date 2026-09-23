@@ -17,3 +17,7 @@
 - [x] Text 格式输出：按文件分组展示发现（severity badge + 内容 + 建议）
 - [x] `review` 命令从 stub 升级为实际调用审查流水线
 - [x] 端到端可验证：对有未提交变更的仓库运行 `diff-sense review` 输出审查发现
+
+## Comments
+
+- 审查修复（2026-09-23）：`file_read` 解析符号链接后拒绝仓库外路径（`../`、绝对路径、外链）；`code_search` 用 `-e` 传查询，防止 git 选项注入。

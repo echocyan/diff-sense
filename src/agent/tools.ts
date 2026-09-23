@@ -1,9 +1,9 @@
 import { tool, type ToolSet } from "ai";
 import { z } from "zod";
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { join } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { Finding } from "../types";
 
 const exec = promisify(execFile);
@@ -42,7 +42,14 @@ export function createTools(cwd: string, findings: Finding[]): ToolSet {
       }),
       execute: async ({ path: filePath }) => {
         try {
-          const content = await readFile(join(cwd, filePath), "utf-8");
+          // 解析符号链接后再校验，拒绝仓库外路径（../、绝对路径、指向外部的链接）
+          const root = await realpath(cwd);
+          const fullPath = await realpath(resolve(cwd, filePath));
+          const rel = relative(root, fullPath);
+          if (rel.split(sep)[0] === ".." || isAbsolute(rel)) {
+            return `Error: path is outside the repository: ${filePath}`;
+          }
+          const content = await readFile(fullPath, "utf-8");
           // 截断过长文件，防止单文件占满 LLM 上下文窗口
           if (content.length > 50_000) {
             return content.slice(0, 50_000) + "\n... (truncated)";
@@ -62,7 +69,8 @@ export function createTools(cwd: string, findings: Finding[]): ToolSet {
       }),
       execute: async ({ query, file_pattern }) => {
         try {
-          const args = ["grep", "-n", "--no-color", query];
+          // 用 -e 传入查询，防止以 - 开头的查询被解析为 git 选项（如 --open-files-in-pager）
+          const args = ["grep", "-n", "--no-color", "-e", query];
           if (file_pattern) args.push("--", file_pattern);
           const { stdout } = await exec("git", args, { cwd, maxBuffer: 1024 * 1024 });
           const lines = stdout.split("\n").filter(Boolean);
