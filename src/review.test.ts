@@ -85,3 +85,112 @@ describe("review", () => {
     expect(prompt).not.toContain("excluded.ts");
   });
 });
+
+describe("review 语义分组", () => {
+  let multi: string;
+  const FILES = ["api/handler.ts", "api/service.ts", "ui/view.ts", "ui/style.ts"];
+
+  beforeAll(async () => {
+    multi = await mkdtemp(join(tmpdir(), "diff-sense-group-"));
+    await mkdir(join(multi, "api"));
+    await mkdir(join(multi, "ui"));
+    await exec("git", ["init", "-q"], { cwd: multi });
+    for (const f of FILES) {
+      await writeFile(join(multi, f), `export const id = "${f}";\n`);
+    }
+  });
+
+  afterAll(async () => {
+    await rm(multi, { recursive: true, force: true });
+  });
+
+  const usage = {
+    inputTokens: { total: 1, noCache: 1, cacheRead: undefined, cacheWrite: undefined },
+    outputTokens: { total: 1, text: 1, reasoning: undefined },
+  };
+
+  /**
+   * 分组调用返回 api / ui 两组；审查调用对组内第一个文件发布一条发现后结束。
+   * 审查调用会等待一个宏任务，以便统计同时进行的审查数
+   */
+  function groupingModel() {
+    const stats = { inFlight: 0, maxInFlight: 0 };
+    const model = new MockLanguageModelV4({
+      doGenerate: async ({ prompt }) => {
+        const text = JSON.stringify(prompt);
+        if (text.includes("file grouping assistant")) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: '[{"label":"api","files":[0,1]},{"label":"ui","files":[2,3]}]',
+              },
+            ],
+            finishReason: { unified: "stop" as const, raw: undefined },
+            usage,
+            warnings: [],
+          };
+        }
+        stats.inFlight++;
+        stats.maxInFlight = Math.max(stats.maxInFlight, stats.inFlight);
+        await new Promise((r) => setTimeout(r, 10));
+        stats.inFlight--;
+        const target = FILES.find((f) => text.includes(`<file path=\\"${f}\\">`))!;
+        return {
+          content: [
+            {
+              type: "tool-call" as const,
+              toolCallId: "1",
+              toolName: "code_comment",
+              input: JSON.stringify({
+                severity: "low",
+                category: "other",
+                content: target,
+                existing_code: `export const id = "${target}";`,
+              }),
+            },
+            {
+              type: "tool-call" as const,
+              toolCallId: "2",
+              toolName: "task_done",
+              input: JSON.stringify({ summary: "done" }),
+            },
+          ],
+          finishReason: { unified: "tool-calls" as const, raw: undefined },
+          usage,
+          warnings: [],
+        };
+      },
+    });
+    return { model, stats };
+  }
+
+  it("文件数 ≥4 时按分组并发审查，组外文件列入 <other_changed_files>", async () => {
+    const { model, stats } = groupingModel();
+    const result = await review({ model, cwd: multi });
+
+    // 1 次分组调用 + 2 组各 1 次审查调用
+    expect(model.doGenerateCalls).toHaveLength(3);
+    expect(stats.maxInFlight).toBe(2);
+    expect(result.totalTokens).toBe(6);
+    expect(result.findings.map((f) => [f.path, f.line])).toEqual([
+      ["api/handler.ts", 1],
+      ["ui/view.ts", 1],
+    ]);
+
+    const apiPrompt = JSON.stringify(
+      model.doGenerateCalls.find((c) => JSON.stringify(c.prompt).includes('api/handler.ts\\">'))!
+        .prompt,
+    );
+    const others = apiPrompt.match(/<other_changed_files>(.*?)<\/other_changed_files>/)?.[1];
+    expect(others).toContain("ui/view.ts");
+    expect(others).toContain("ui/style.ts");
+    expect(others).not.toContain("api/");
+  });
+
+  it("concurrency 限制同时进行的审查数", async () => {
+    const { model, stats } = groupingModel();
+    await review({ model, cwd: multi, concurrency: 1 });
+    expect(stats.maxInFlight).toBe(1);
+  });
+});

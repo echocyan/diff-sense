@@ -105,7 +105,7 @@ Use AI SDK's `createProviderRegistry` to create a unified registry. Users config
 Each semantic group is reviewed by a `ToolLoopAgent` instance:
 
 - **Stop conditions**: `hasToolCall('task_done')` (normal completion) + `isStepCount(30)` (safety cap), combined as an array in `stopWhen`
-- **Progress**: `agent.generate()` (non-streaming) + lifecycle callbacks (`onStepStart`, `onToolExecutionStart`, `onToolExecutionEnd`, `onStepEnd`). In human mode callbacks print progress; in agent mode they're silent.
+- **Progress**: `agent.generate()` (non-streaming) + the `onStepEnd` lifecycle callback. `review()` aggregates steps across all groups and reports `{ groupsDone, groupsTotal, steps }` via `onProgress`; the CLI spinner (stderr) shows it.
 - **Concurrency**: all groups dispatched via `Promise.all` with `p-limit` throttling.
 
 ### Agent Tools (4 tools)
@@ -134,7 +134,7 @@ Following OCR's proven patterns:
    - Input: file metadata only — `[index] STATUS path (+insertions/-deletions)` per line
    - Output: JSON array `[{label, files}]`
    - Triggered when file count ≥ 4; below threshold, files are bundled into one group
-   - Max 10 files per group; fallback to single-file groups on parse failure
+   - Max 10 files per group (oversize groups are split); duplicate / out-of-range indices dropped, unassigned files become single-file groups; fallback to single-file groups on parse or call failure
 
 2. **Review Prompt** (system + user):
    - System message: role definition, capabilities, strict focus rules (only comment on files in `<review_files>`, use tools for context, avoid commenting on deleted/unchanged code)

@@ -10,8 +10,10 @@ import { buildSystemPrompt, buildUserPrompt } from "./prompts";
 interface RunReviewAgentOptions {
   /** LLM 模型实例 */
   model: LanguageModel;
-  /** 过滤后的 diff 条目 */
+  /** 本组待审查的 diff 条目 */
   entries: DiffEntry[];
+  /** 组外变更文件，作为上下文列入 <other_changed_files> */
+  others?: DiffEntry[];
   /** 项目根目录 */
   cwd: string;
   /** 生效的规则列表，按组内文件解析后注入 Review Checklist */
@@ -24,9 +26,9 @@ interface RunReviewAgentOptions {
   onStepEnd?: (info: { stepNumber: number }) => void;
 }
 
-/** 创建 ToolLoopAgent 执行代码审查，收集 findings 后返回结果 */
+/** 创建 ToolLoopAgent 审查一个语义分组，收集 findings 后返回结果 */
 export async function runReviewAgent(options: RunReviewAgentOptions): Promise<ReviewResult> {
-  const { model, entries, cwd, rules, readNewFile, background, onStepEnd } = options;
+  const { model, entries, others, cwd, rules, readNewFile, background, onStepEnd } = options;
   // findings 数组由 code_comment 工具的 execute 回调写入，写入前先锚定行号
   const findings: Finding[] = [];
   const tools = createTools(cwd, findings, (code, path) =>
@@ -44,13 +46,17 @@ export async function runReviewAgent(options: RunReviewAgentOptions): Promise<Re
   const start = Date.now();
 
   const result = await agent.generate({
-    prompt: buildUserPrompt(entries, {
-      checklist: resolveGroupRules(
-        entries.map((e) => e.path),
-        rules,
-      ),
-      background,
-    }),
+    prompt: buildUserPrompt(
+      entries,
+      {
+        checklist: resolveGroupRules(
+          entries.map((e) => e.path),
+          rules,
+        ),
+        background,
+      },
+      others,
+    ),
     onStepEnd: onStepEnd ? ({ stepNumber }) => onStepEnd({ stepNumber }) : undefined,
   });
 

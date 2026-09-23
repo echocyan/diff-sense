@@ -46,11 +46,11 @@ _Avoid_: Policy, guideline, check
 ### 分组 (Grouping)
 
 **语义分组 (Semantic Group)**:
-一组相关文件的聚类（如 handler + service + test），分配给同一个 Agent 一起审查。由分组提示词生成，仅基于文件元数据（路径、状态、增删行数），不传入差异内容。
+一组相关文件的聚类（如 handler + service + test），分配给同一个 Agent 一起审查。由分组提示词生成，仅基于文件元数据（路径、状态、增删行数），不传入差异内容。每组至多 10 个文件（超出时按上限拆分）；文件数少于 4 时不分组，全部文件归入一组。多个分组由各自的审查 Agent 并发审查，并发数由 `--concurrency` 控制（默认 4）。
 _Avoid_: Batch, chunk, partition
 
 **分组提示词 (Grouping Prompt)**:
-将文件聚类为语义分组的 LLM 调用。输入是文件元数据列表，输出是 JSON 数组 `[{label, files}]`。
+将文件聚类为语义分组的 LLM 调用。输入是文件元数据列表，输出是 JSON 数组 `[{label, files}]`（files 为文件索引）。重复与越界索引被丢弃，未分配的文件各成一组；输出无法解析或调用失败时，退化为每个文件单独成组。
 
 ### Agent
 

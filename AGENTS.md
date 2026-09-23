@@ -32,11 +32,12 @@ CLI (src/index.ts → src/commands/review.ts)
    → getDiff() (src/diff.ts)             ← git diff 解析（workspace / commit / range）
    → filterFiles() (src/filter.ts)       ← 文件过滤（前置过滤 + 四道门）
    → loadRules() (src/rules/matcher.ts)  ← 项目规则 + 内置规则（src/rules/builtin.ts）
-   → runReviewAgent() (src/agent/loop.ts) ← ToolLoopAgent 循环
+   → groupFiles() (src/grouping.ts)     ← 语义分组（文件数 ≥4 时调用分组提示词，失败退化为单文件组）
+   → runReviewAgent() (src/agent/loop.ts) ← 每组一个 ToolLoopAgent，p-limit 控制并发（--concurrency）
      ├── resolveGroupRules()  组内文件 → Review Checklist
      ├── anchor()     行号锚定 (src/anchor.ts)，作为 locate 注入 code_comment；
      │                全文件扫描经 readNewFile() (src/diff.ts) 读取
-     ├── prompts.ts   系统/用户提示词
+     ├── prompts.ts   分组提示词 + 审查提示词（组外文件列入 <other_changed_files>）
      └── tools.ts     code_comment / file_read / code_search / task_done
  → formatText() / formatJson() (src/output/) ← --format text|json；进度（spinner）始终显示，写 stderr
 ```
@@ -46,7 +47,8 @@ CLI (src/index.ts → src/commands/review.ts)
 - `DiffEntry` — 一个文件的 diff 元数据
 - `Location` — 代码位置（path + line/endLine，line=0 表示未锚定）
 - `Finding` — 一条锚定到代码位置的审查发现（继承 `Location`）
-- `ReviewResult` — 审查结果（findings + token 用量 + 耗时）
+- `ReviewResult` — 审查结果（findings + token 用量 + 耗时；token 含分组调用）
+- `FileGroup` — 一个语义分组（label + 组内 diff 条目）
 - `Rule` — 一条审查规则（glob 模式 + 注入 Review Checklist 的规则文本）
 
 ### 共享模块

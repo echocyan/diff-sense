@@ -1,7 +1,7 @@
-import { Option, type Command } from "commander";
+import { InvalidArgumentError, Option, type Command } from "commander";
 import { spinner } from "@clack/prompts";
 import { resolveModel } from "../config";
-import { review } from "../review";
+import { DEFAULT_CONCURRENCY, review } from "../review";
 import { formatText } from "../output/text";
 import { formatJson } from "../output/json";
 import type { DiffMode } from "../diff";
@@ -15,6 +15,7 @@ interface ReviewCliOptions {
   from?: string;
   to?: string;
   exclude?: string[];
+  concurrency: number;
 }
 
 /** 注册 review 子命令到 Commander 程序 */
@@ -28,6 +29,7 @@ export function registerReviewCommand(program: Command) {
     .option("--from <ref>", "范围起点（需配合 --to）")
     .option("--to <ref>", "范围终点（需配合 --from）")
     .option("--exclude <pattern...>", "排除文件模式")
+    .option("--concurrency <n>", "同时审查的分组数", parseConcurrency, DEFAULT_CONCURRENCY)
     .action(async (opts: ReviewCliOptions) => {
       // 进度写到 stderr，stdout 只留审查结果（便于管道处理 JSON）
       const s = spinner({ output: process.stderr });
@@ -43,8 +45,9 @@ export function registerReviewCommand(program: Command) {
           diffMode,
           background: opts.background,
           excludePatterns: opts.exclude,
-          onStepEnd: ({ stepNumber }) => {
-            s.message(`审查中...（第 ${stepNumber + 1} 步）`);
+          concurrency: opts.concurrency,
+          onProgress: ({ groupsDone, groupsTotal, steps }) => {
+            s.message(`审查中...（已完成 ${groupsDone}/${groupsTotal} 组，共 ${steps} 步）`);
           },
         });
 
@@ -57,6 +60,15 @@ export function registerReviewCommand(program: Command) {
         process.exit(1);
       }
     });
+}
+
+/** 解析 --concurrency，仅接受正整数 */
+function parseConcurrency(value: string): number {
+  const n = Number(value);
+  if (!/^\d+$/.test(value) || n < 1) {
+    throw new InvalidArgumentError("必须为正整数");
+  }
+  return n;
 }
 
 /** 从 CLI 选项解析 diff 模式，校验 --commit 与 --from/--to 的互斥关系 */
