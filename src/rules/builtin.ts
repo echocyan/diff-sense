@@ -212,5 +212,5 @@ export const BUILTIN_RULES: Rule[] = [
   { pattern: "**/*.rs", rule: RUST },
   { pattern: ".github/workflows/**/*.{yaml,yml}", rule: GITHUB_ACTIONS },
   { pattern: "**/*.{yaml,yml}", rule: YAML },
-  { pattern: "**/{Dockerfile,Dockerfile.*,*.dockerfile}", rule: DOCKERFILE },
+  { pattern: "**/{Dockerfile,Dockerfile.*,*.dockerfile,.dockerignore}", rule: DOCKERFILE },
 ];
