@@ -25,12 +25,14 @@ export function registerReviewCommand(program: Command) {
     .option("--to <ref>", "范围终点（需配合 --from）")
     .option("--exclude <pattern...>", "排除文件模式")
     .action(async (opts: ReviewCliOptions) => {
-      const diffMode = resolveDiffMode(opts);
       const s = spinner();
+      let started = false;
 
       try {
+        const diffMode = resolveDiffMode(opts);
         const { model, provider, modelId } = resolveModel();
         s.start(`使用 ${provider}/${modelId} 审查中...`);
+        started = true;
 
         const result = await review({
           model,
@@ -39,7 +41,7 @@ export function registerReviewCommand(program: Command) {
           background: opts.background,
           excludePatterns: opts.exclude,
           onStepEnd: ({ stepNumber }) => {
-            s.message(`审查中... (step ${stepNumber + 1})`);
+            s.message(`审查中...（第 ${stepNumber + 1} 步）`);
           },
         });
 
@@ -47,7 +49,8 @@ export function registerReviewCommand(program: Command) {
         console.log();
         console.log(formatText(result));
       } catch (err) {
-        s.stop("审查失败");
+        // 参数校验等失败发生在 spinner 启动前，此时无需停止
+        if (started) s.stop("审查失败");
         console.error(err instanceof Error ? err.message : String(err));
         process.exit(1);
       }

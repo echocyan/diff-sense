@@ -6,6 +6,6 @@ export function registerConfigCommand(program: Command) {
     .command("config")
     .description("管理配置")
     .action(() => {
-      console.log("config command — not yet implemented");
+      console.log("config 命令尚未实现");
     });
 }
