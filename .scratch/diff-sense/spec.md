@@ -145,7 +145,7 @@ Following OCR's proven patterns:
 ### Rule System (2 layers)
 
 - **Built-in defaults**: glob-to-rule mapping, first-match-wins, case-insensitive path matching. Language rules for: TypeScript/JavaScript, Python, Go, Java, Rust, Dockerfile, GitHub Actions YAML, generic YAML, plus a default fallback. Rules follow OCR's pattern: precision-over-recall preamble, categorized defect patterns, "do not report" clauses.
-- **Project override**: `.diff-sense/rules.json` with `include`/`exclude` globs (`include` not yet implemented and not assigned to any ticket; unknown fields are rejected) and custom `rules` array (`[{ "pattern": "<glob>", "rule": "<text>" }]`). Project rules are matched before built-in defaults (first-match-wins across the combined list), so they override built-ins for matching files.
+- **Project override**: `.diff-sense/rules.json` with `exclude` globs (unknown fields are rejected) and custom `rules` array (`[{ "pattern": "<glob>", "rule": "<text>" }]`). Project rules are matched before built-in defaults (first-match-wins across the combined list), so they override built-ins for matching files.
 
 ### Line Number Anchoring (3 steps)
 
@@ -250,6 +250,7 @@ This is a greenfield project — no existing tests. The test patterns will be es
 - **SARIF output**: GitHub Code Scanning integration format (skipped — adds complexity, low resume value)
 - **Session persistence / Viewer**: OCR's JSONL session recording and web viewer (skipped — too complex for v1)
 - **Telemetry**: OpenTelemetry integration (skipped — not needed for v1)
+- **`include` in rules.json**: an include-glob field for the project config (skipped — no concrete need yet; `exclude` plus the extension whitelist cover v1. If added later, define whether it restricts review to matching files or force-includes files past the extension whitelist)
 - **MCP support**: Acting as MCP client or server (skipped — skill integration is sufficient)
 - **Delegation mode**: OCR's mode where host agent provides its own LLM (skipped — beyond scope)
 - **GitLab CI integration**: Only GitHub Actions in v1
