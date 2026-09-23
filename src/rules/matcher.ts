@@ -29,6 +29,11 @@ export function resolveGroupRules(paths: string[], rules: Rule[]): string {
   }
   if (byRule.size === 1) return [...byRule.keys()][0];
   return [...byRule]
-    .map(([rule, group]) => `<rules for="${group.join(", ")}">\n${rule}\n</rules>`)
+    .map(([rule, group]) => `<rules for="${escapeAttr(group.join(", "))}">\n${rule}\n</rules>`)
     .join("\n\n");
+}
+
+/** 转义 XML 属性值中的 & 与双引号 */
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }

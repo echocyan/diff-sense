@@ -50,6 +50,11 @@ describe("resolveGroupRules", () => {
       '<rules for="a.yml, b.yaml">\nYAML\n</rules>\n\n<rules for=".github/workflows/ci.yml">\nGHA\n</rules>',
     );
   });
+
+  it("路径中的 & 与双引号在 for 属性里转义", () => {
+    const out = resolveGroupRules(['a"b.yml', "c&d.yml", ".github/workflows/x.yml"], RULES);
+    expect(out).toContain('<rules for="a&quot;b.yml, c&amp;d.yml">');
+  });
 });
 
 describe("loadRules", () => {
