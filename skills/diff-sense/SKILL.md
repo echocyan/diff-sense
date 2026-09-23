@@ -54,7 +54,7 @@ diff-sense config check
 默认审查工作区相对 HEAD 的全部变更（已暂存、未暂存与未跟踪的文件）：
 
 ```bash
-diff-sense review --format json --background "<业务上下文>"
+diff-sense review --format json --background '<业务上下文>'
 ```
 
 按用户要审查的范围选用参数：
@@ -67,7 +67,7 @@ diff-sense review --format json --background "<业务上下文>"
 
 注意：
 
-- 业务上下文放进双引号前，先转义其中的 `"`、`$` 和反引号。
+- 业务上下文用单引号包裹：单引号内 shell 不做任何展开，`$`、反引号、`!` 和反斜杠都按原文传入，不会被当作命令或变量执行。文本中的单引号写成 `'\''`（先结束引号，插入转义的单引号，再重新开始引号）。
 - 审查会多次调用 LLM，变更较大时需要几分钟；把命令超时设为 10 分钟左右。
 - 审查结果只写 stdout；stderr 是进度提示，解析时忽略。命令以非零退出码结束时，把 stderr 最后的报错转告用户。
 
