@@ -12,7 +12,7 @@ diff-sense 是一个轻量级的 AI 驱动代码审查 CLI 工具，用 TypeScri
 
 它提供三种集成方式：
 1. **CLI**：开发者在终端直接运行 `diff-sense review`
-2. **Skill**：其他 AI Agent 通过 `.agents/skills/` 下的 skill 文件调用，获得结构化 Markdown 审查摘要
+2. **Skill**：其他 AI Agent 通过 skill 文件调用，获得结构化 Markdown 审查摘要。源文件位于本仓库 `skills/`，经 skills.sh 分发，使用者安装到 `.agents/`、`.claude/` 等目录
 3. **GitHub Action**：作为 Composite Action 集成到 CI/CD，自动在 PR 上发布行内评论
 
 ## User Stories
@@ -38,7 +38,7 @@ diff-sense 是一个轻量级的 AI 驱动代码审查 CLI 工具，用 TypeScri
 19. As a developer, I want related files (handler + service + test) to be grouped and reviewed together, so that the reviewer can catch cross-file inconsistencies
 20. As a developer, I want review findings to be anchored to specific code lines, so that I can jump to the exact location in my editor
 21. As a developer, I want `diff-sense version` to show the current version, so that I can check what's installed
-22. As an AI agent developer, I want to add diff-sense as a skill via `.agents/skills/diff-sense.md`, so that my agent can call it for code review
+22. As an AI agent developer, I want to install the diff-sense skill via skills.sh (into `.agents/`, `.claude/`, etc.), so that my agent can call it for code review
 23. As an AI agent, I want the skill to return a Markdown summary with findings categorized by severity (High/Medium/Low), so that I can present them to the user or act on them
 24. As an AI agent, I want the skill to handle installation and configuration checks, so that I don't have to implement that logic myself
 25. As a CI/CD engineer, I want to add `uses: <owner>/diff-sense@v1` to my GitHub Actions workflow, so that PRs are automatically reviewed
@@ -171,7 +171,7 @@ The `existing_code` field from `code_comment` is matched to precise line numbers
 
 ### Skill Integration
 
-- `.agents/skills/diff-sense.md` file containing instructions for AI agents:
+- `skills/diff-sense.md` (source in this repo, distributed via skills.sh; users install it into `.agents/`, `.claude/`, etc.) containing instructions for AI agents:
   1. Check if `diff-sense` CLI is installed (install via `npm install -g diff-sense` if not)
   2. Check if LLM is configured
   3. Extract business context from the current task
@@ -207,6 +207,8 @@ src/
     ├── text.ts         # text 格式
     └── json.ts         # JSON 格式
 ```
+
+Skill source lives at the repo root in `skills/` (outside `src/`, not bundled by tsup).
 
 Tests co-located with source: `*.test.ts` alongside the module they test.
 

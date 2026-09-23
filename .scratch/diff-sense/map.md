@@ -17,7 +17,7 @@ diff-sense v1 的所有设计决策已落定——架构、模块划分、CLI �
 ## Decisions so far
 
 - **技术栈**：TypeScript + Vercel AI SDK + pnpm
-- **集成面**：CLI + Skill（`.agents/skills/` md 文件）+ GitHub Action（Composite Action）
+- **集成面**：CLI + Skill（源文件在 `skills/`，经 skills.sh 分发）+ GitHub Action（Composite Action）
 - **LLM 提供商**：多提供商，AI SDK 原生支持
 - **Diff 模式**：workspace / commit / range 三种
 - **语义分组**：包含，单次 LLM 调用，仅传文件元数据

@@ -79,7 +79,7 @@ _Avoid_: Reviewer, bot
 _Avoid_: Mode, target
 
 **Skill**:
-`.agents/skills/` 下的 markdown 文件，指导其他 AI Agent 如何调用 diff-sense 并解读输出。返回按严重程度分组的 Markdown 审查摘要。
+源文件位于仓库 `skills/` 下的 markdown 文件（经 skills.sh 分发，使用者安装到 `.agents/`、`.claude/` 等目录），指导其他 AI Agent 如何调用 diff-sense 并解读输出。返回按严重程度分组的 Markdown 审查摘要。
 _Avoid_: Plugin, extension, integration
 
 **Action**:
