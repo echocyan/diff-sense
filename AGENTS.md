@@ -49,6 +49,7 @@ CLI (src/index.ts → src/commands/review.ts)
 
 - `src/glob.ts` — glob 转正则（`*`、`**`、`{a,b}`），文件过滤与规则匹配共用
 - `src/project-config.ts` — 读取并校验 `.diff-sense/rules.json`（`exclude` + `rules`）
+- `src/xml.ts` — 提示词 XML 属性值转义（`<file path>`、`<rules for>` 共用）
 
 ### AI SDK 用法
 
@@ -72,6 +73,7 @@ CLI (src/index.ts → src/commands/review.ts)
 - **测试**：仅在必要时编写测试，禁止在实现业务代码后补测试
 - **构建**：TypeScript ESM（`"moduleResolution": "Bundler"`），tsup 单入口打包，target node20
 - **格式化 / 代码检查**：oxfmt + oxlint
+- **文档同步**：文档需与想法、决策和代码保持同步
 
 ## Agent skills
 

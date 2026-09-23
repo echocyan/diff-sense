@@ -1,4 +1,5 @@
 import type { DiffEntry } from "../types";
+import { escapeAttr } from "../xml";
 
 /** 构建审查 Agent 的系统提示词 */
 export function buildSystemPrompt(): string {
@@ -30,7 +31,9 @@ export interface UserTask {
 /** 构建用户提示词，将 diff 条目包装为 XML 结构化格式供 LLM 解析 */
 export function buildUserPrompt(entries: DiffEntry[], task: UserTask): string {
   // 每个文件的 diff 包装为 <file path="..."> 标签，便于 LLM 按文件定位
-  const fileBlocks = entries.map((e) => `<file path="${e.path}">\n${e.diff}\n</file>`).join("\n\n");
+  const fileBlocks = entries
+    .map((e) => `<file path="${escapeAttr(e.path)}">\n${e.diff}\n</file>`)
+    .join("\n\n");
 
   const sections: string[] = [];
   if (task.background) {

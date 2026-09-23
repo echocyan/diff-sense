@@ -31,4 +31,9 @@ describe("buildUserPrompt", () => {
     const noBg = userTask(buildUserPrompt([ENTRY], { checklist: "C" }))!;
     expect(noBg).not.toContain("Requirement Background");
   });
+
+  it("文件路径中的 & 与双引号在 path 属性里转义", () => {
+    const prompt = buildUserPrompt([{ ...ENTRY, path: 'a"b&c.ts' }], { checklist: "C" });
+    expect(prompt).toContain('<file path="a&quot;b&amp;c.ts">');
+  });
 });

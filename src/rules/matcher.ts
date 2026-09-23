@@ -1,4 +1,5 @@
 import { globToRegExp } from "../glob";
+import { escapeAttr } from "../xml";
 import type { Rule } from "../types";
 import { loadProjectConfig } from "../project-config";
 import { BUILTIN_RULES, DEFAULT_RULE } from "./builtin";
@@ -31,9 +32,4 @@ export function resolveGroupRules(paths: string[], rules: Rule[]): string {
   return [...byRule]
     .map(([rule, group]) => `<rules for="${escapeAttr(group.join(", "))}">\n${rule}\n</rules>`)
     .join("\n\n");
-}
-
-/** 转义 XML 属性值中的 & 与双引号 */
-function escapeAttr(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
