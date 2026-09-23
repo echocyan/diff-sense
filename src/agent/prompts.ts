@@ -1,6 +1,42 @@
 import type { DiffEntry } from "../types";
 import { escapeAttr } from "../xml";
 
+/** 构建分组提示词的系统消息 */
+export function buildGroupingSystemPrompt(maxFilesPerGroup: number): string {
+  return `You are a file grouping assistant for code review. Group changed files into semantically related clusters that should be reviewed together.
+
+Files in the same group typically:
+- Belong to the same module/feature
+- Have producer/consumer relationships (e.g. interface and implementation)
+- Are i18n/config variants of the same resource (e.g. message_en.properties and message_zh.properties)
+- Share the same directory and work together on a single concern
+
+Each file in the list is prefixed with a zero-based index in brackets, e.g. \`[0] MODIFIED path/to/file (+12/-3)\`. Refer to files by that integer index, never by path.
+
+Rules:
+- Every file index must appear in exactly one group.
+- A group may contain 1 file if it is unrelated to others.
+- Maximum ${maxFilesPerGroup} files per group.
+- The "files" field of each group is an array of the integer indices shown in brackets.
+- Output ONLY a JSON array, no other text.`;
+}
+
+/** 构建分组提示词的用户消息，仅包含文件元数据（不含 diff 内容） */
+export function buildGroupingUserPrompt(entries: DiffEntry[]): string {
+  const fileList = entries.map((e, i) => `[${i}] ${describeFile(e)}`).join("\n");
+  return `Group the following changed files:
+
+${fileList}
+
+Respond with a JSON array, where "files" holds the integer indices shown in brackets beside each file:
+[{"label": "short theme description", "files": [0, 1]}]`;
+}
+
+/** 文件元数据的单行描述：`STATUS path (+增/-删)` */
+function describeFile(e: DiffEntry): string {
+  return `${e.status.toUpperCase()} ${e.path} (+${e.insertions}/-${e.deletions})`;
+}
+
 /** 构建审查 Agent 的系统提示词 */
 export function buildSystemPrompt(): string {
   return `You are a senior code reviewer. Your job is to review code changes and find real defects.

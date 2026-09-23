@@ -63,3 +63,11 @@ export interface Rule {
   /** 规则文本（审查检查清单） */
   rule: string;
 }
+
+/** 语义分组：一组相关文件，分配给同一个审查 Agent 一起审查 */
+export interface FileGroup {
+  /** 分组主题（由分组提示词生成） */
+  label: string;
+  /** 组内文件的 diff 条目 */
+  entries: DiffEntry[];
+}
