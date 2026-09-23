@@ -175,9 +175,9 @@ Matching only considers files under review. `path` is normalised (leading `./` s
 
 ### Skill Integration
 
-- `skills/diff-sense.md` (source in this repo, distributed via skills.sh; users install it into `.agents/`, `.claude/`, etc.) containing instructions for AI agents:
+- `skills/diff-sense/SKILL.md` (skills.sh layout: one directory per skill with YAML frontmatter; source in this repo, distributed via skills.sh; users install it into `.agents/`, `.claude/`, etc.) containing instructions for AI agents:
   1. Check if `diff-sense` CLI is installed (install via `npm install -g diff-sense` if not)
-  2. Check if LLM is configured
+  2. Check if LLM is configured (`diff-sense config check`, which reflects env vars merged with the config file)
   3. Extract business context from the current task
   4. Run `diff-sense review --format json --background "..."`
   5. Parse JSON output, classify findings by severity
