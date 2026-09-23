@@ -23,8 +23,9 @@ export function formatText(result: ReviewResult): string {
     for (const f of items) {
       const badge = SEVERITY_BADGE[f.severity] ?? f.severity;
       const category = pc.dim(`[${f.category}]`);
-      // 已锚定展示 path:line（终端中可点击跳转），未锚定单独标记
-      const location = f.line > 0 ? pc.cyan(`${f.path}:${f.line}`) : pc.yellow("（未锚定）");
+      // 已锚定展示 path:line 或 path:line-endLine（终端中可点击跳转），未锚定单独标记
+      const lines = f.endLine > f.line ? `${f.line}-${f.endLine}` : `${f.line}`;
+      const location = f.line > 0 ? pc.cyan(`${f.path}:${lines}`) : pc.yellow("（未锚定）");
       parts.push(`  ${badge} ${category} ${location} ${f.content}`);
       if (f.existingCode) {
         parts.push(pc.dim(`    > ${f.existingCode.split("\n")[0]}`));
