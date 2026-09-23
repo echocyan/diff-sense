@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { formatJson } from "./json";
-import type { Finding } from "../types";
+import type { Finding, ReviewResult } from "../types";
 
 const finding: Finding = {
   content: "空指针",
@@ -12,9 +12,14 @@ const finding: Finding = {
   existingCode: "a.b()",
 };
 
+/** 以给定发现构造审查结果，其余字段与输出无关 */
+function result(findings: Finding[]): ReviewResult {
+  return { findings, entries: [], totalTokens: 0, durationMs: 0 };
+}
+
 describe("formatJson", () => {
   it("输出可解析的发现数组，字段齐全且顺序固定，缺省建议为 null", () => {
-    const out = formatJson({ findings: [finding], entries: [], totalTokens: 10, durationMs: 5 });
+    const out = formatJson(result([finding]));
     const parsed = JSON.parse(out);
     expect(parsed).toEqual([
       {
@@ -41,8 +46,6 @@ describe("formatJson", () => {
   });
 
   it("无发现时输出空数组", () => {
-    expect(
-      JSON.parse(formatJson({ findings: [], entries: [], totalTokens: 0, durationMs: 0 })),
-    ).toEqual([]);
+    expect(JSON.parse(formatJson(result([])))).toEqual([]);
   });
 });

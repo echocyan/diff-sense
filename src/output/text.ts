@@ -1,5 +1,6 @@
 import pc from "picocolors";
 import type { Finding, ReviewResult } from "../types";
+import { lineRange } from "./location";
 
 /** 严重程度对应的终端彩色标签 */
 const SEVERITY_BADGE: Record<string, string> = {
@@ -24,8 +25,7 @@ export function formatText(result: ReviewResult): string {
       const badge = SEVERITY_BADGE[f.severity] ?? f.severity;
       const category = pc.dim(`[${f.category}]`);
       // 已锚定展示 path:line 或 path:line-endLine（终端中可点击跳转），未锚定单独标记
-      const lineRange = f.endLine > f.line ? `${f.line}-${f.endLine}` : `${f.line}`;
-      const location = f.line > 0 ? pc.cyan(`${f.path}:${lineRange}`) : pc.yellow("（未锚定）");
+      const location = f.line > 0 ? pc.cyan(`${f.path}:${lineRange(f)}`) : pc.yellow("（未锚定）");
       parts.push(`  ${badge} ${category} ${location} ${f.content}`);
       if (f.existingCode) {
         parts.push(pc.dim(`    > ${f.existingCode.split("\n")[0]}`));
