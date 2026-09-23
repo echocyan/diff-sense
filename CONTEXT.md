@@ -30,7 +30,7 @@ _Avoid_: Comment, issue, warning, violation
 ### 文件处理 (File Processing)
 
 **文件过滤器 (File Filter)**:
-四道门 (Gate) 组成的流水线，决定差异中哪些文件进入审查。依次为：二进制排除 → 敏感路径排除 → 用户排除 → 扩展名白名单。
+四道门 (Gate) 组成的流水线，决定差异中哪些文件进入审查。依次为：二进制排除 → 敏感路径排除 → 用户排除 → 扩展名白名单。扩展名白名单放行源代码与配置文件（json / yaml / toml 等），排除文档（md / txt）及 lockfile、`*.min.js` 等生成产物。
 _Avoid_: File selector, file picker
 
 **门 (Gate)**:

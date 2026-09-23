@@ -48,7 +48,7 @@ describe("filterFiles", () => {
 
   it("应用用户排除模式", async () => {
     const result = await filterFiles(
-      [entry({ path: "src/app.ts" }), entry({ path: "docs/readme.md" })],
+      [entry({ path: "src/app.ts" }), entry({ path: "docs/example.ts" })],
       { excludePatterns: ["docs/**"] },
     );
     expect(result).toHaveLength(1);
@@ -106,7 +106,7 @@ describe("filterFiles", () => {
         [
           entry({ path: "src/app.ts" }),
           entry({ path: "vendor/lib.js" }),
-          entry({ path: "docs/readme.md" }),
+          entry({ path: "docs/example.ts" }),
         ],
         { cwd: testDir, excludePatterns: ["docs/**"] },
       );
@@ -212,6 +212,9 @@ describe("isCodeFile", () => {
     "query.sql",
     "Dockerfile",
     "Makefile",
+    "CMakeLists.txt",
+    "tsconfig.json",
+    ".github/workflows/ci.yml",
   ])("识别代码文件: %s", (path) => {
     expect(isCodeFile(path)).toBe(true);
   });
@@ -225,6 +228,14 @@ describe("isCodeFile", () => {
     "video.mp4",
     "icon.ico",
     "doc.pdf",
+    "README.md",
+    "docs/guide.mdx",
+    "notes.txt",
+    "pnpm-lock.yaml",
+    "packages/web/package-lock.json",
+    "composer.lock",
+    "dist/app.min.js",
+    "dist/style.min.css",
   ])("排除非代码文件: %s", (path) => {
     expect(isCodeFile(path)).toBe(false);
   });

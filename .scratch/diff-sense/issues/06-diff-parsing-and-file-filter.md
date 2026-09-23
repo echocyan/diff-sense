@@ -21,3 +21,5 @@
 - 审查修复（2026-09-23）：用户排除模式语义明确为——含 `*` 时按 glob 匹配整条路径（`*` 不跨目录，`**` 跨目录，`**/` 可匹配零层，其余字符按字面匹配）；不含 `*` 时按路径段匹配（`docs` 匹配 `docs/a.ts`、`x/docs/a.ts`，不匹配 `docsite/`）。敏感路径改为按文件名锚定（`.env`、`id_rsa` 等），不再误伤 `config.env.ts`、`valid_rsa.go`。移除白名单中不可达的 `.R`。
 
 - 审查修复（2026-09-23）：`--commit` / `--from` / `--to` 参数校验错误改为输出单行提示并以退出码 1 结束，不再抛出带堆栈的未处理异常。
+
+- 审查修复（2026-09-23）：**决定**——扩展名白名单移除 `.md` / `.mdx` / `.txt`；保留 json / yaml / toml，因为 CI workflow、tsconfig 等配置变更值得审查；同时排除 lockfile（`pnpm-lock.yaml`、`package-lock.json` 等）和 `*.min.js` / `*.min.css`。

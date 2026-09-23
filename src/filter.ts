@@ -70,9 +70,6 @@ const CODE_EXTENSIONS = new Set([
   ".yaml",
   ".yml",
   ".toml",
-  ".md",
-  ".mdx",
-  ".txt",
   ".dockerfile",
   ".tf",
   ".hcl",
@@ -100,6 +97,21 @@ const CODE_FILENAMES = new Set([
   "Justfile",
   "Taskfile",
   "CMakeLists.txt",
+]);
+
+/** 扩展名在白名单内、但属于工具生成产物的文件名（lockfile 等） */
+const GENERATED_FILENAMES = new Set([
+  "package-lock.json",
+  "pnpm-lock.yaml",
+  "yarn.lock",
+  "bun.lock",
+  "npm-shrinkwrap.json",
+  "composer.lock",
+  "Gemfile.lock",
+  "Cargo.lock",
+  "poetry.lock",
+  "Pipfile.lock",
+  "go.sum",
 ]);
 
 /** 文件过滤选项 */
@@ -168,10 +180,11 @@ function globToRegExp(glob: string): RegExp {
   return new RegExp(`^${source}$`);
 }
 
-/** 检查文件是否为代码文件（扩展名白名单 + 特殊文件名如 Dockerfile） */
+/** 检查文件是否为代码文件（扩展名白名单 + 特殊文件名如 Dockerfile，排除 lockfile 与压缩产物） */
 function isCodeFile(path: string): boolean {
   const filename = path.split("/").pop() ?? "";
   if (CODE_FILENAMES.has(filename)) return true;
+  if (GENERATED_FILENAMES.has(filename) || /\.min\.(js|css)$/.test(filename)) return false;
   const ext = extname(filename).toLowerCase();
   if (!ext) return false;
   return CODE_EXTENSIONS.has(ext);
