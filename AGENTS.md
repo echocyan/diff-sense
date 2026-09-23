@@ -89,3 +89,7 @@ Issues and specs live as markdown files under `.scratch/`. See `docs/agents/issu
 ### Domain docs
 
 Single-context: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Code review
+
+执行 code review 任务时，使用 `codex-subagent` skill 委派给 Codex。
