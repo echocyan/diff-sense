@@ -63,8 +63,8 @@ export async function review(options: ReviewOptions): Promise<ReviewResult> {
   const grouping = await groupFiles(entries, model);
 
   const progress: ReviewProgress = { groupsDone: 0, groupsTotal: grouping.groups.length, steps: 0 };
-  const report = () => onProgress?.({ ...progress });
-  report();
+  const reportProgress = () => onProgress?.({ ...progress });
+  reportProgress();
 
   const results = await Promise.all(
     grouping.groups.map((group) =>
@@ -79,11 +79,11 @@ export async function review(options: ReviewOptions): Promise<ReviewResult> {
           background,
           onStepEnd: () => {
             progress.steps++;
-            report();
+            reportProgress();
           },
         });
         progress.groupsDone++;
-        report();
+        reportProgress();
         return result;
       }),
     ),
