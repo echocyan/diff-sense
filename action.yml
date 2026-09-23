@@ -1,0 +1,131 @@
+name: diff-sense
+description: 用 diff-sense 审查 PR 变更，将发现发布为行内评论，无法定位到 diff 行的发现汇总为一条摘要评论
+author: EchoCyan
+branding:
+  icon: eye
+  color: blue
+
+# 用法（需要 pull_request 事件、完整 git 历史与 PR 写权限）：
+#
+#   on: pull_request
+#   permissions:
+#     contents: read
+#     pull-requests: write
+#   jobs:
+#     review:
+#       runs-on: ubuntu-latest
+#       steps:
+#         - uses: actions/checkout@v4
+#           with:
+#             fetch-depth: 0
+#         - uses: <owner>/diff-sense@v1
+#           with:
+#             provider: anthropic
+#             model: claude-sonnet-5
+#             api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+inputs:
+  provider:
+    description: LLM 提供商（anthropic / deepseek / openai）
+    required: true
+  model:
+    description: 模型 ID
+    required: true
+  api_key:
+    description: LLM API Key，请通过 secrets 传入
+    required: true
+  from_ref:
+    description: 审查范围起点；实际从它与 to_ref 的 merge-base 开始比较，与 PR 页面的 diff 一致
+    required: false
+    default: ${{ github.event.pull_request.base.sha }}
+  to_ref:
+    description: 审查范围终点，行内评论发布到该提交
+    required: false
+    default: ${{ github.event.pull_request.head.sha }}
+  concurrency:
+    description: 同时审查的分组数
+    required: false
+    default: "4"
+  background:
+    description: 业务上下文，帮助审查 Agent 理解改动意图
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "24"
+
+    # 输入一律经环境变量传入脚本，不直接内插到 run 中，避免输入内容被当作 shell 代码执行
+    - name: 确定审查范围
+      id: range
+      shell: bash
+      env:
+        FROM_REF: ${{ inputs.from_ref }}
+        TO_REF: ${{ inputs.to_ref }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        set -euo pipefail
+        # 先校验再审查，避免审查完成后才发现无处发布而白白消耗 token
+        if [ -z "$PR_NUMBER" ]; then
+          echo "::error::diff-sense Action 需要在 pull_request 事件中运行，以便发布 PR 评论"
+          exit 1
+        fi
+        if [ -z "$FROM_REF" ] || [ -z "$TO_REF" ]; then
+          echo "::error::缺少 from_ref 或 to_ref"
+          exit 1
+        fi
+        if ! head=$(git rev-parse --verify "$TO_REF^{commit}") \
+          || ! base=$(git merge-base "$FROM_REF" "$head"); then
+          echo "::error::无法解析 $FROM_REF 与 $TO_REF 的共同祖先：请在 actions/checkout 中设置 fetch-depth: 0"
+          exit 1
+        fi
+        echo "base=$base" >> "$GITHUB_OUTPUT"
+        echo "head=$head" >> "$GITHUB_OUTPUT"
+
+    - name: 运行 diff-sense 审查
+      shell: bash
+      env:
+        DIFF_SENSE_PROVIDER: ${{ inputs.provider }}
+        DIFF_SENSE_MODEL: ${{ inputs.model }}
+        DIFF_SENSE_API_KEY: ${{ inputs.api_key }}
+        BASE: ${{ steps.range.outputs.base }}
+        HEAD: ${{ steps.range.outputs.head }}
+        CONCURRENCY: ${{ inputs.concurrency }}
+        BACKGROUND: ${{ inputs.background }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        # CLI 版本与 Action 版本一致：取 Action 仓库 package.json 中的版本号
+        version=$(node -p 'require(process.env.ACTION_PATH + "/package.json").version')
+        args=(review --from "$BASE" --to "$HEAD" --format github --concurrency "$CONCURRENCY")
+        if [ -n "$BACKGROUND" ]; then
+          args+=(--background "$BACKGROUND")
+        fi
+        npx --yes "diff-sense@$version" "${args[@]}" > "$RUNNER_TEMP/diff-sense-review.json"
+
+    - name: 发布审查评论
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        HEAD: ${{ steps.range.outputs.head }}
+      run: |
+        set -euo pipefail
+        result="$RUNNER_TEMP/diff-sense-review.json"
+        if jq -e '.review != null' "$result" > /dev/null; then
+          # commit_id 固定为被审查的提交，审查期间有新推送时评论仍落在正确的行上
+          jq --arg sha "$HEAD" '.review + {commit_id: $sha}' "$result" \
+            | gh api --method POST "repos/$REPO/pulls/$PR_NUMBER/reviews" --input - > /dev/null
+          echo "已发布 $(jq '.review.comments | length' "$result") 条行内评论"
+        fi
+        if jq -e '.summary != null' "$result" > /dev/null; then
+          jq -r '.summary' "$result" | gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file -
+          echo "已发布摘要评论"
+        fi
+        if jq -e '.review == null and .summary == null' "$result" > /dev/null; then
+          echo "diff-sense 未发现问题"
+        fi

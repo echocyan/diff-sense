@@ -169,7 +169,7 @@ Matching only considers files under review. `path` is normalised (leading `./` s
 
 - `action.yml` at repository root defines the Action
 - Inputs: `provider`, `model`, `api_key` (from secrets), `from_ref`, `to_ref`, `concurrency`, `background`
-- The action: installs Node.js, runs `npx diff-sense review --from ... --to ... --format json`, parses JSON output, posts PR review comments via GitHub API
+- The action: installs Node.js, reviews from the merge-base of `from_ref` and `to_ref` (defaults: the PR base / head SHAs; requires `fetch-depth: 0`) with `npx diff-sense review --from ... --to ... --format github`, then posts the resulting payload via `gh` (`review` → Pull Request Review API with `commit_id` pinned to the reviewed commit; `summary` → PR conversation comment)
 - Inline comments for anchored findings (using the Pull Request Review API)
 - Summary comment for unanchored findings (`line=0`) aggregated as a Markdown list
 - Uses `${{ github.token }}` for PR API access

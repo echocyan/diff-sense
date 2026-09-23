@@ -83,5 +83,5 @@ _Avoid_: Audience（已移除的 `--audience` 参数）
 _Avoid_: Plugin, extension, integration
 
 **Action**:
-GitHub Actions Composite Action（`action.yml`），在 CI 中运行 diff-sense 并将发现发布为 PR 行内评论。
+GitHub Actions Composite Action（`action.yml`），在 CI 中以 `--format github` 运行 diff-sense，将落在 diff hunk 内的发现发布为 PR 行内评论，其余发现汇入摘要评论。
 _Avoid_: Workflow, pipeline
