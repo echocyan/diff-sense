@@ -6,9 +6,10 @@ import type { Rule } from "./types";
 // 项目配置文件相对仓库根目录的路径
 const CONFIG_PATH = ".diff-sense/rules.json";
 
-const ProjectConfigSchema = z.object({
+// 严格模式：未支持的字段（如 spec 中尚未实现的 include）直接报错，避免用户误以为已生效
+const ProjectConfigSchema = z.strictObject({
   exclude: z.array(z.string()).default([]),
-  rules: z.array(z.object({ pattern: z.string(), rule: z.string() })).default([]),
+  rules: z.array(z.strictObject({ pattern: z.string(), rule: z.string() })).default([]),
 });
 
 /** 项目级配置 `.diff-sense/rules.json` */

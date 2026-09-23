@@ -39,6 +39,7 @@ describe("loadProjectConfig", () => {
     ["JSON 语法错误", "{ rules: "],
     ["rules 条目缺少 rule 字段", JSON.stringify({ rules: [{ pattern: "**/*.ts" }] })],
     ["exclude 不是字符串数组", JSON.stringify({ exclude: "vendor" })],
+    ["含未支持的字段（如 include）", JSON.stringify({ include: ["src/**"] })],
   ])("配置无效时报错并指明文件：%s", async (_, content) => {
     await writeConfig(content);
     await expect(loadProjectConfig(dir)).rejects.toThrow(/\.diff-sense\/rules\.json/);
