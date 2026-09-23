@@ -59,7 +59,7 @@ CLI (src/index.ts → src/commands/review.ts)
 
 - 使用 AI SDK v7（`ai@7.x`），**不要**凭记忆写 API — 先查 `node_modules/ai/docs/`
 - `LanguageModel`（非 `LanguageModelV1`）、`ToolSet`、`ToolLoopAgent`
-- `createProviderRegistry({ anthropic: createAnthropic({ apiKey }), ... })` 多提供商注册；`apiKey` 取自 `DIFF_SENSE_API_KEY`，未设置时回退到各提供商自身的环境变量
+- `createProviderRegistry({ anthropic: createAnthropic({ apiKey }), ... })` 多提供商注册；`provider` / `model` / `apiKey` 由 `resolveSettings()`（`src/config.ts`）合并环境变量与 `~/.diff-sense/config.json` 得出，`apiKey` 缺省时回退到各提供商自身的环境变量
 - `result.usage.totalTokens` 类型为 `number | undefined`，需要 `?? 0`
 
 ### 三个集成面

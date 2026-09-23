@@ -74,6 +74,39 @@ export async function getConfigValue(key: string, path = CONFIG_FILE) {
   return (await readConfigFile(path))[assertConfigKey(key)];
 }
 
+/** 各配置项对应的环境变量，优先级高于配置文件 */
+const ENV_VARS: Record<ConfigKey, string> = {
+  provider: "DIFF_SENSE_PROVIDER",
+  model: "DIFF_SENSE_MODEL",
+  apiKey: "DIFF_SENSE_API_KEY",
+};
+
+/** 合并后的生效配置；apiKey 缺省时由各提供商读取自身环境变量（如 ANTHROPIC_API_KEY） */
+export interface ResolvedSettings {
+  provider: Provider;
+  model: string;
+  apiKey?: string;
+}
+
+/** 合并配置文件与环境变量（环境变量逐项优先，空字符串视为未设置），校验必填项 */
+export function resolveSettings(
+  file: Settings,
+  env: Record<string, string | undefined>,
+): ResolvedSettings {
+  const pick = (key: ConfigKey) => env[ENV_VARS[key]] || file[key];
+  const provider = pick("provider");
+  const model = pick("model");
+
+  if (!provider || !model) {
+    const missing = (["provider", "model"] as const).filter((k) => !pick(k));
+    throw new Error(
+      `缺少 ${missing.join("、")}：请运行 diff-sense config 进行配置，` +
+        `或设置环境变量 ${missing.map((k) => ENV_VARS[k]).join("、")}`,
+    );
+  }
+  return { provider: assertProvider(provider), model, apiKey: pick("apiKey") };
+}
+
 /** 校验配置项名称 */
 function assertConfigKey(key: string): ConfigKey {
   if ((CONFIG_KEYS as readonly string[]).includes(key)) return key as ConfigKey;
@@ -93,29 +126,20 @@ export interface ResolvedConfig {
   modelId: string;
 }
 
-/** 从环境变量解析 LLM 模型 */
-export function resolveModel(): ResolvedConfig {
-  const provider = process.env.DIFF_SENSE_PROVIDER;
-  const modelId = process.env.DIFF_SENSE_MODEL;
-
-  if (!provider || !modelId) {
-    throw new Error(
-      "缺少环境变量：请设置 DIFF_SENSE_PROVIDER 和 DIFF_SENSE_MODEL\n" +
-        "例如：DIFF_SENSE_PROVIDER=anthropic DIFF_SENSE_MODEL=claude-sonnet-4-5",
-    );
-  }
-
-  // 注册多 LLM 提供商，运行时按 DIFF_SENSE_PROVIDER 选择
-  // DIFF_SENSE_API_KEY 未设置时 apiKey 为 undefined，各提供商回退到自身的环境变量（如 ANTHROPIC_API_KEY）
-  const apiKey = process.env.DIFF_SENSE_API_KEY;
+/** 通过提供商注册表将 provider:model 解析为模型实例 */
+export function createModel(settings: ResolvedSettings): LanguageModel {
+  // apiKey 为 undefined 时各提供商回退到自身的环境变量（如 ANTHROPIC_API_KEY）
+  const { apiKey } = settings;
   const registry = createProviderRegistry({
     anthropic: createAnthropic({ apiKey }),
     deepseek: createDeepSeek({ apiKey }),
     openai: createOpenAI({ apiKey }),
   });
+  return registry.languageModel(`${settings.provider}:${settings.model}`);
+}
 
-  // registry.languageModel() 接受 `provider:model` 格式，需要类型断言满足联合类型签名
-  const id = `${provider}:${modelId}` as "anthropic:_" | "deepseek:_" | "openai:_";
-  const model = registry.languageModel(id);
-  return { model, provider, modelId };
+/** 读取配置文件并合并环境变量，解析出审查使用的 LLM 模型 */
+export async function resolveModel(): Promise<ResolvedConfig> {
+  const settings = resolveSettings(await readConfigFile(), process.env);
+  return { model: createModel(settings), provider: settings.provider, modelId: settings.model };
 }

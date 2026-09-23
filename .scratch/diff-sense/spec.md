@@ -89,14 +89,16 @@ The system is split into two layers:
 
 ### Configuration System
 
-Two sources, env vars take priority:
+Two sources, env vars take priority per key (an empty env var counts as unset):
 
-1. **Environment variables**: `DIFF_SENSE_PROVIDER`, `DIFF_SENSE_MODEL`, `DIFF_SENSE_API_KEY`, etc. Primary for CI.
-2. **Config file**: `~/.diff-sense/config.json`. Primary for local dev. Managed via `diff-sense config`.
+1. **Environment variables**: `DIFF_SENSE_PROVIDER`, `DIFF_SENSE_MODEL`, `DIFF_SENSE_API_KEY`. Primary for CI.
+2. **Config file**: `~/.diff-sense/config.json` with keys `provider`, `model`, `apiKey` (unknown keys are rejected; file mode `0600` since it may hold the API key). Primary for local dev. Managed via `diff-sense config`.
+
+`provider` and `model` are required; a missing one produces an error naming both ways to set it. `provider` must be one of `anthropic`, `deepseek`, `openai`. `apiKey` is optional: when unset, each provider falls back to its own env var (e.g. `ANTHROPIC_API_KEY`).
 
 ### Multi-Provider LLM Support
 
-Use AI SDK's `createProviderRegistry` to create a unified registry. Users configure `provider` + `model` strings (e.g., `anthropic` + `claude-sonnet-4-5`). At runtime, the registry resolves `provider:model` to an AI SDK language model instance.
+Use AI SDK's `createProviderRegistry` to create a unified registry. Users configure `provider` + `model` strings (e.g., `anthropic` + `claude-sonnet-5`). At runtime, the registry resolves `provider:model` to an AI SDK language model instance.
 
 ### Agent Loop (per review group)
 
