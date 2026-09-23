@@ -88,14 +88,24 @@ const ENV_VARS: Record<ConfigKey, string> = {
   apiKey: "DIFF_SENSE_API_KEY",
 };
 
-/** 合并后的生效配置；apiKey 缺省时由各提供商读取自身环境变量（如 ANTHROPIC_API_KEY） */
+/** API Key 来源：某个环境变量，或配置文件 */
+export type ApiKeySource = { type: "env"; name: string } | { type: "file" };
+
+/** 合并后的生效配置 */
 export interface ResolvedSettings {
   provider: Provider;
   model: string;
+  /** 显式传给提供商的 API Key；缺省时由各提供商读取自身环境变量（如 ANTHROPIC_API_KEY） */
   apiKey?: string;
+  /** API Key 的生效来源；各处均未提供时为 undefined */
+  apiKeySource?: ApiKeySource;
 }
 
-/** 合并配置文件与环境变量（环境变量逐项优先，空字符串视为未设置），校验必填项 */
+/**
+ * 合并配置文件与环境变量（环境变量逐项优先，空字符串视为未设置），校验必填项
+ *
+ * API Key 优先级：DIFF_SENSE_API_KEY → 配置文件 → 提供商自身的环境变量（由提供商读取，不经 apiKey 传入）
+ */
 export function resolveSettings(
   file: Settings,
   env: Record<string, string | undefined>,
@@ -119,9 +129,23 @@ export function resolveSettings(
         `或设置环境变量 ${missing.map((k) => ENV_VARS[k]).join("、")}`,
     );
   }
+  const envKey = fromEnv("apiKey");
+  if (envKey) {
+    return {
+      provider,
+      model,
+      apiKey: envKey,
+      apiKeySource: { type: "env", name: ENV_VARS.apiKey },
+    };
+  }
   // 配置文件中的 apiKey 属于文件中的 provider；环境变量切换到其他提供商时不沿用，避免把密钥发给错误的服务
   const fileKey = provider === file.provider ? file.apiKey : undefined;
-  return { provider, model, apiKey: fromEnv("apiKey") ?? fileKey };
+  if (fileKey) return { provider, model, apiKey: fileKey, apiKeySource: { type: "file" } };
+  const providerEnvVar = providerApiKeyEnvVar(provider);
+  const apiKeySource = env[providerEnvVar]
+    ? { type: "env" as const, name: providerEnvVar }
+    : undefined;
+  return { provider, model, apiKeySource };
 }
 
 /** 校验取值属于给定选项，否则以 message 加上可选值列表报错 */
@@ -170,8 +194,7 @@ export async function resolveModel(
 export interface ConfigCheck {
   provider: Provider;
   model: string;
-  /** API Key 来源：`DIFF_SENSE_API_KEY`、`配置文件` 或提供商自身的环境变量名 */
-  apiKeySource: string;
+  apiKeySource: ApiKeySource;
 }
 
 /**
@@ -183,27 +206,14 @@ export async function checkConfig(
   env: Record<string, string | undefined> = process.env,
   path = CONFIG_FILE,
 ): Promise<ConfigCheck> {
-  const settings = await loadSettings(env, path);
-  const apiKeySource = findApiKeySource(settings, env);
+  const { provider, model, apiKeySource } = await loadSettings(env, path);
   if (!apiKeySource) {
     throw new Error(
       "缺少 API Key：请运行 diff-sense config 进行配置，" +
-        `或设置环境变量 ${ENV_VARS.apiKey} 或 ${providerApiKeyEnvVar(settings.provider)}`,
+        `或设置环境变量 ${ENV_VARS.apiKey} 或 ${providerApiKeyEnvVar(provider)}`,
     );
   }
-  return { provider: settings.provider, model: settings.model, apiKeySource };
-}
-
-/** 按生效优先级查找 API Key 的来源，均未提供时返回 undefined */
-function findApiKeySource(
-  settings: ResolvedSettings,
-  env: Record<string, string | undefined>,
-): string | undefined {
-  if (env[ENV_VARS.apiKey]) return ENV_VARS.apiKey;
-  // resolveSettings 中 apiKey 只可能来自 DIFF_SENSE_API_KEY 或配置文件
-  if (settings.apiKey) return "配置文件";
-  const providerEnvVar = providerApiKeyEnvVar(settings.provider);
-  return env[providerEnvVar] ? providerEnvVar : undefined;
+  return { provider, model, apiKeySource };
 }
 
 /** 提供商自身读取的 API Key 环境变量名（如 ANTHROPIC_API_KEY），apiKey 缺省时生效 */

@@ -49,9 +49,8 @@ export function registerConfigCommand(program: Command) {
     .action(() =>
       run(async () => {
         const { provider, model, apiKeySource } = await checkConfig();
-        console.log(
-          `provider: ${provider}\nmodel: ${model}\napiKey: 已设置（来源：${apiKeySource}）`,
-        );
+        const source = apiKeySource.type === "file" ? "配置文件" : `环境变量 ${apiKeySource.name}`;
+        console.log(`provider: ${provider}\nmodel: ${model}\napiKey: 已设置（来源：${source}）`);
       }),
     );
 }
