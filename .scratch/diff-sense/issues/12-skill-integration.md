@@ -19,3 +19,5 @@
 - 实现记录（2026-09-23）：Skill 路径由 `skills/diff-sense.md` 改为 `skills/diff-sense/SKILL.md`，符合 skills.sh 的目录结构（每个 skill 一个目录，SKILL.md 带 name / description frontmatter）。`config check` 与 `resolveModel` 共用配置加载规则（`loadSettings`），输出 provider、model 与 API Key 来源（`DIFF_SENSE_API_KEY` / 配置文件 / 提供商自身环境变量），缺项时报错并以退出码 1 结束。
 - 决策（2026-09-23）：Skill 不代为运行 `diff-sense config` 向导（需要交互式终端），也不让用户在对话中提供 API Key；摘要输出后不自动按建议修改代码，由用户决定处理哪些发现。
 - 遗留（2026-09-23）：diff-sense 尚未发布到 npm（工单 14），`npm install -g diff-sense` 在发布前不可用；Skill 未在真实提供商上端到端验证。
+- 审查修复（2026-09-23，两轴审查）：Skill 中业务上下文改用单引号包裹（原双引号方案漏掉反斜杠与 `!`）；API Key 来源的判定并入 `resolveSettings`（返回 `apiKeySource`，类型为 `{ type: "env", name } | { type: "file" }`），`checkConfig` 不再重复优先级逻辑，展示文案移到命令层；`checkConfig` 测试去掉冗余断言，报错断言不再固定措辞。
+- 审查未采纳（2026-09-23，两轴审查）：`config check` 命名保留（CONTEXT.md 避用「check」指审查与规则，此处指配置）；摘要不展示 `existingCode`，没有 `suggestionCode` 时不写建议（`content` 已包含问题说明）；空字符串的提供商环境变量视为未设置。
