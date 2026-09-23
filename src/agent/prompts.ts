@@ -19,20 +19,30 @@ Rules:
 - When done reviewing all files, call task_done with a summary`;
 }
 
+/** 用户提示词中 <user_task> 区块的内容 */
+export interface UserTask {
+  /** 匹配到的规则文本，注入 Review Checklist */
+  checklist: string;
+  /** 业务上下文，注入 Requirement Background */
+  background?: string;
+}
+
 /** 构建用户提示词，将 diff 条目包装为 XML 结构化格式供 LLM 解析 */
-export function buildUserPrompt(entries: DiffEntry[], background?: string): string {
+export function buildUserPrompt(entries: DiffEntry[], task: UserTask): string {
   // 每个文件的 diff 包装为 <file path="..."> 标签，便于 LLM 按文件定位
   const fileBlocks = entries.map((e) => `<file path="${e.path}">\n${e.diff}\n</file>`).join("\n\n");
 
-  const parts = [`<review_files>\n${fileBlocks}\n</review_files>`];
-
-  if (background) {
-    parts.push(`<user_task>\n<background>${background}</background>\n</user_task>`);
+  const sections: string[] = [];
+  if (task.background) {
+    sections.push(`### Requirement Background\n${task.background}`);
   }
-
-  parts.push(
-    "Review the code changes above. Report each finding with code_comment. When finished, call task_done.",
+  sections.push(`### Review Checklist\n${task.checklist}`);
+  sections.push(
+    "Review the code changes in <review_files> above. Report each finding with code_comment. When finished, call task_done.",
   );
 
-  return parts.join("\n\n");
+  return [
+    `<review_files>\n${fileBlocks}\n</review_files>`,
+    `<user_task>\n${sections.join("\n\n")}\n</user_task>`,
+  ].join("\n\n");
 }

@@ -28,9 +28,11 @@ DIFF_SENSE_PROVIDER=deepseek DIFF_SENSE_MODEL=deepseek-flash pnpm build && node 
 ```
 CLI (src/index.ts → src/commands/review.ts)
  → review() 编排 (src/review.ts)        ← 测试接缝
-   → getWorkspaceDiff() (src/diff.ts)    ← git diff 解析
-   → filterFiles() (src/filter.ts)       ← 文件过滤
+   → getDiff() (src/diff.ts)             ← git diff 解析（workspace / commit / range）
+   → filterFiles() (src/filter.ts)       ← 文件过滤（前置过滤 + 四道门）
+   → loadRules() (src/rules/matcher.ts)  ← 项目规则 + 内置规则（src/rules/builtin.ts）
    → runReviewAgent() (src/agent/loop.ts) ← ToolLoopAgent 循环
+     ├── resolveGroupRules()  组内文件 → Review Checklist
      ├── prompts.ts   系统/用户提示词
      └── tools.ts     code_comment / file_read / code_search / task_done
  → formatText() (src/output/text.ts)     ← 终端输出
@@ -41,6 +43,12 @@ CLI (src/index.ts → src/commands/review.ts)
 - `DiffEntry` — 一个文件的 diff 元数据
 - `Finding` — 一条锚定到代码位置的审查发现
 - `ReviewResult` — 审查结果（findings + token 用量 + 耗时）
+- `Rule` — 一条审查规则（glob 模式 + 注入 Review Checklist 的规则文本）
+
+### 共享模块
+
+- `src/glob.ts` — glob 转正则（`*`、`**`、`{a,b}`），文件过滤与规则匹配共用
+- `src/project-config.ts` — 读取并校验 `.diff-sense/rules.json`（`exclude` + `rules`）
 
 ### AI SDK 用法
 

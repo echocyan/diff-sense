@@ -3,6 +3,7 @@ import type { ReviewResult } from "./types";
 import { getDiff, type DiffMode } from "./diff";
 import { filterFiles, type FilterOptions } from "./filter";
 import { runReviewAgent } from "./agent/loop";
+import { loadRules } from "./rules/matcher";
 
 /** 审查编排选项 */
 export interface ReviewOptions {
@@ -36,5 +37,6 @@ export async function review(options: ReviewOptions): Promise<ReviewResult> {
     return { findings: [], totalTokens: 0, durationMs: 0 };
   }
 
-  return runReviewAgent({ model, entries, cwd, background, onStepEnd });
+  const rules = await loadRules(cwd);
+  return runReviewAgent({ model, entries, cwd, rules, background, onStepEnd });
 }

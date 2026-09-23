@@ -1,6 +1,7 @@
 import { ToolLoopAgent, hasToolCall, isStepCount } from "ai";
 import type { LanguageModel } from "ai";
-import type { DiffEntry, Finding, ReviewResult } from "../types";
+import type { DiffEntry, Finding, ReviewResult, Rule } from "../types";
+import { resolveGroupRules } from "../rules/matcher";
 import { createTools } from "./tools";
 import { buildSystemPrompt, buildUserPrompt } from "./prompts";
 
@@ -12,6 +13,8 @@ interface RunReviewAgentOptions {
   entries: DiffEntry[];
   /** 项目根目录 */
   cwd: string;
+  /** 生效的规则列表，按组内文件解析后注入 Review Checklist */
+  rules: Rule[];
   /** 业务上下文 */
   background?: string;
   /** 每个 Agent 步骤结束时的回调 */
@@ -20,7 +23,7 @@ interface RunReviewAgentOptions {
 
 /** 创建 ToolLoopAgent 执行代码审查，收集 findings 后返回结果 */
 export async function runReviewAgent(options: RunReviewAgentOptions): Promise<ReviewResult> {
-  const { model, entries, cwd, background, onStepEnd } = options;
+  const { model, entries, cwd, rules, background, onStepEnd } = options;
   // findings 数组由 code_comment 工具的 execute 回调写入
   const findings: Finding[] = [];
   const tools = createTools(cwd, findings);
@@ -36,7 +39,13 @@ export async function runReviewAgent(options: RunReviewAgentOptions): Promise<Re
   const start = Date.now();
 
   const result = await agent.generate({
-    prompt: buildUserPrompt(entries, background),
+    prompt: buildUserPrompt(entries, {
+      checklist: resolveGroupRules(
+        entries.map((e) => e.path),
+        rules,
+      ),
+      background,
+    }),
     onStepEnd: onStepEnd ? ({ stepNumber }) => onStepEnd({ stepNumber }) : undefined,
   });
 

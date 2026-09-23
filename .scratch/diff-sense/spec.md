@@ -145,7 +145,7 @@ Following OCR's proven patterns:
 ### Rule System (2 layers)
 
 - **Built-in defaults**: glob-to-rule mapping, first-match-wins, case-insensitive path matching. Language rules for: TypeScript/JavaScript, Python, Go, Java, Rust, Dockerfile, GitHub Actions YAML, generic YAML, plus a default fallback. Rules follow OCR's pattern: precision-over-recall preamble, categorized defect patterns, "do not report" clauses.
-- **Project override**: `.diff-sense/rules.json` with `include`/`exclude` globs and custom `rules` array. Project rules override built-in defaults for matching files.
+- **Project override**: `.diff-sense/rules.json` with `include`/`exclude` globs and custom `rules` array (`[{ "pattern": "<glob>", "rule": "<text>" }]`). Project rules are matched before built-in defaults (first-match-wins across the combined list), so they override built-ins for matching files.
 
 ### Line Number Anchoring (3 steps)
 
@@ -194,6 +194,8 @@ src/
 ├── config.ts           # 配置加载（env + file）+ 提供商注册表
 ├── diff.ts             # Diff 解析（workspace / commit / range）
 ├── filter.ts           # 文件过滤器（4 道门）
+├── glob.ts             # glob 转正则（过滤与规则共用）
+├── project-config.ts   # .diff-sense/rules.json 读取与校验
 ├── grouping.ts         # 语义分组（LLM 调用）
 ├── anchor.ts           # 行号锚定（3 步）
 ├── rules/              # 规则系统
