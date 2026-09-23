@@ -23,3 +23,5 @@
 - 审查修复（2026-09-23）：`file_read` 解析符号链接后拒绝仓库外路径（`../`、绝对路径、外链）；`code_search` 用 `-e` 传查询，防止 git 选项注入。
 
 - 审查修复（2026-09-23）：Workspace 模式由 `git diff` + `git diff --cached` 拼接改为 `git diff HEAD`，修复同一文件同时有 staged / unstaged 改动时产出两条 DiffEntry 的问题。
+
+- 审查修复（2026-09-23）：补齐 `DIFF_SENSE_API_KEY` 读取，注入到所有提供商；未设置时回退到 `ANTHROPIC_API_KEY` 等提供商自身的环境变量。

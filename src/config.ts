@@ -1,11 +1,8 @@
 import { createProviderRegistry } from "ai";
-import { anthropic } from "@ai-sdk/anthropic";
-import { deepseek } from "@ai-sdk/deepseek";
-import { openai } from "@ai-sdk/openai";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createDeepSeek } from "@ai-sdk/deepseek";
+import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
-
-// 注册多 LLM 提供商，运行时按 DIFF_SENSE_PROVIDER 选择
-const registry = createProviderRegistry({ anthropic, deepseek, openai });
 
 /** 模型解析结果 */
 export interface ResolvedConfig {
@@ -25,6 +22,15 @@ export function resolveModel(): ResolvedConfig {
         "例如：DIFF_SENSE_PROVIDER=anthropic DIFF_SENSE_MODEL=claude-sonnet-4-5",
     );
   }
+
+  // 注册多 LLM 提供商，运行时按 DIFF_SENSE_PROVIDER 选择
+  // DIFF_SENSE_API_KEY 未设置时 apiKey 为 undefined，各提供商回退到自身的环境变量（如 ANTHROPIC_API_KEY）
+  const apiKey = process.env.DIFF_SENSE_API_KEY;
+  const registry = createProviderRegistry({
+    anthropic: createAnthropic({ apiKey }),
+    deepseek: createDeepSeek({ apiKey }),
+    openai: createOpenAI({ apiKey }),
+  });
 
   // registry.languageModel() 接受 `provider:model` 格式，需要类型断言满足联合类型签名
   const id = `${provider}:${modelId}` as "anthropic:_" | "deepseek:_" | "openai:_";
