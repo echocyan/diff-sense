@@ -4,7 +4,9 @@ import {
   CONFIG_FILE,
   CONFIG_KEYS,
   PROVIDERS,
+  checkConfig,
   getConfigValue,
+  providerApiKeyEnvVar,
   readConfigFile,
   setConfigValue,
   writeConfigFile,
@@ -38,6 +40,18 @@ export function registerConfigCommand(program: Command) {
         const value = await getConfigValue(key);
         if (value === undefined) process.exit(1);
         console.log(value);
+      }),
+    );
+
+  config
+    .command("check")
+    .description("检查合并环境变量后的生效配置是否完整（不输出密钥），不完整时以退出码 1 结束")
+    .action(() =>
+      run(async () => {
+        const { provider, model, apiKeySource } = await checkConfig();
+        console.log(
+          `provider: ${provider}\nmodel: ${model}\napiKey: 已设置（来源：${apiKeySource}）`,
+        );
       }),
     );
 }
@@ -78,7 +92,7 @@ async function runWizard() {
   const apiKey = await password({
     message: savedKey
       ? "API Key（留空沿用已保存的值）"
-      : `API Key（留空则读取环境变量 ${provider.toUpperCase()}_API_KEY）`,
+      : `API Key（留空则读取环境变量 ${providerApiKeyEnvVar(provider)}）`,
   });
   if (isCancel(apiKey)) return abort();
 

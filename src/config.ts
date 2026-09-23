@@ -143,17 +143,70 @@ export function createModel(settings: ResolvedSettings): LanguageModel {
 }
 
 /**
- * 解析审查使用的 LLM 模型
+ * 加载生效配置
  *
  * 环境变量已提供 provider 与 model 时完全忽略配置文件（CI 中不受本机配置文件影响，
  * 此时 apiKey 取 DIFF_SENSE_API_KEY 或提供商自身的环境变量）；否则读取配置文件并合并
  */
+async function loadSettings(
+  env: Record<string, string | undefined>,
+  path: string,
+): Promise<ResolvedSettings> {
+  const envComplete = Boolean(env[ENV_VARS.provider] && env[ENV_VARS.model]);
+  const file = envComplete ? {} : await readConfigFile(path);
+  return resolveSettings(file, env);
+}
+
+/** 解析审查使用的 LLM 模型，配置加载规则见 {@link loadSettings} */
 export async function resolveModel(
   env: Record<string, string | undefined> = process.env,
   path = CONFIG_FILE,
 ): Promise<{ model: LanguageModel; settings: ResolvedSettings }> {
-  const envComplete = Boolean(env[ENV_VARS.provider] && env[ENV_VARS.model]);
-  const file = envComplete ? {} : await readConfigFile(path);
-  const settings = resolveSettings(file, env);
+  const settings = await loadSettings(env, path);
   return { model: createModel(settings), settings };
+}
+
+/** 生效配置的检查结果；只含 API Key 的来源，不含密钥本身 */
+export interface ConfigCheck {
+  provider: Provider;
+  model: string;
+  /** API Key 来源：`DIFF_SENSE_API_KEY`、`配置文件` 或提供商自身的环境变量名 */
+  apiKeySource: string;
+}
+
+/**
+ * 检查合并环境变量与配置文件后的生效配置是否完整，供 Skill / Action 判断是否已配置
+ *
+ * 与 {@link resolveModel} 使用相同的加载规则；缺少 provider、model 或 API Key 时报错并提示配置方式
+ */
+export async function checkConfig(
+  env: Record<string, string | undefined> = process.env,
+  path = CONFIG_FILE,
+): Promise<ConfigCheck> {
+  const settings = await loadSettings(env, path);
+  const apiKeySource = findApiKeySource(settings, env);
+  if (!apiKeySource) {
+    throw new Error(
+      "缺少 API Key：请运行 diff-sense config 进行配置，" +
+        `或设置环境变量 ${ENV_VARS.apiKey} 或 ${providerApiKeyEnvVar(settings.provider)}`,
+    );
+  }
+  return { provider: settings.provider, model: settings.model, apiKeySource };
+}
+
+/** 按生效优先级查找 API Key 的来源，均未提供时返回 undefined */
+function findApiKeySource(
+  settings: ResolvedSettings,
+  env: Record<string, string | undefined>,
+): string | undefined {
+  if (env[ENV_VARS.apiKey]) return ENV_VARS.apiKey;
+  // resolveSettings 中 apiKey 只可能来自 DIFF_SENSE_API_KEY 或配置文件
+  if (settings.apiKey) return "配置文件";
+  const providerEnvVar = providerApiKeyEnvVar(settings.provider);
+  return env[providerEnvVar] ? providerEnvVar : undefined;
+}
+
+/** 提供商自身读取的 API Key 环境变量名（如 ANTHROPIC_API_KEY），apiKey 缺省时生效 */
+export function providerApiKeyEnvVar(provider: Provider): string {
+  return `${provider.toUpperCase()}_API_KEY`;
 }

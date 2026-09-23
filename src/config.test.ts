@@ -10,6 +10,7 @@ import {
   resolveSettings,
   createModel,
   resolveModel,
+  checkConfig,
 } from "./config";
 
 let dir: string;
@@ -160,5 +161,51 @@ describe("resolveModel", () => {
     await setConfigValue("model", "gpt-5", path);
     const { settings } = await resolveModel({}, path);
     expect(settings).toEqual({ provider: "openai", model: "gpt-5" });
+  });
+});
+
+describe("checkConfig", () => {
+  it("报告生效配置与 API Key 来源，不包含密钥本身", async () => {
+    await writeConfigFile(
+      { provider: "anthropic", model: "claude-sonnet-5", apiKey: "sk-secret" },
+      path,
+    );
+    const result = await checkConfig({}, path);
+    expect(result).toEqual({
+      provider: "anthropic",
+      model: "claude-sonnet-5",
+      apiKeySource: "配置文件",
+    });
+    expect(JSON.stringify(result)).not.toContain("sk-secret");
+  });
+
+  it("DIFF_SENSE_API_KEY 优先于配置文件", async () => {
+    await writeConfigFile({ provider: "anthropic", model: "claude-sonnet-5", apiKey: "k" }, path);
+    const result = await checkConfig({ DIFF_SENSE_API_KEY: "env-key" }, path);
+    expect(result.apiKeySource).toBe("DIFF_SENSE_API_KEY");
+  });
+
+  it("仅设环境变量时（CI）也视为已配置，密钥可来自提供商自身的环境变量", async () => {
+    const env = {
+      DIFF_SENSE_PROVIDER: "openai",
+      DIFF_SENSE_MODEL: "gpt-5",
+      OPENAI_API_KEY: "sk-openai",
+    };
+    expect(await checkConfig(env, path)).toEqual({
+      provider: "openai",
+      model: "gpt-5",
+      apiKeySource: "OPENAI_API_KEY",
+    });
+  });
+
+  it("缺少 API Key 时报错并提示可用的环境变量", async () => {
+    const env = { DIFF_SENSE_PROVIDER: "deepseek", DIFF_SENSE_MODEL: "deepseek-flash" };
+    await expect(checkConfig(env, path)).rejects.toThrow(
+      /缺少 API Key[\s\S]*diff-sense config[\s\S]*DIFF_SENSE_API_KEY[\s\S]*DEEPSEEK_API_KEY/,
+    );
+  });
+
+  it("缺少 provider 或 model 时报错", async () => {
+    await expect(checkConfig({}, path)).rejects.toThrow(/缺少 provider、model/);
   });
 });
