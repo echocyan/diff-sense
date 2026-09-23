@@ -35,6 +35,7 @@ CLI (src/index.ts → src/commands/review.ts)
      ├── resolveGroupRules()  组内文件 → Review Checklist
      ├── prompts.ts   系统/用户提示词
      └── tools.ts     code_comment / file_read / code_search / task_done
+                      code_comment → anchor() (src/anchor.ts) 行号锚定，全文件扫描经 readNewFile() 读取
  → formatText() (src/output/text.ts)     ← 终端输出
 ```
 

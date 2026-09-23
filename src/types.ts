@@ -8,8 +8,10 @@ export type Category = "bug" | "security" | "performance" | "maintainability" | 
 export interface Finding {
   /** 文件路径（相对于仓库根目录） */
   path: string;
-  /** 所在行号 */
+  /** 起始行号（变更后文件，1 起），0 表示未锚定 */
   line: number;
+  /** 结束行号，0 表示未锚定 */
+  endLine: number;
   /** 严重程度 */
   severity: Severity;
   /** 分类 */

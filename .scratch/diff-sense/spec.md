@@ -151,9 +151,11 @@ Following OCR's proven patterns:
 
 The `existing_code` field from `code_comment` is matched to precise line numbers:
 
-1. **Hunk new-side match**: sliding window search through the diff hunk's added lines (whitespace-insensitive)
-2. **Full file scan**: if hunk match fails, scan the entire post-change file
+1. **Hunk new-side match**: sliding window search through each hunk's new side — context + added lines (whitespace-insensitive; a leading `+` copied from the diff is tolerated)
+2. **Full file scan**: if hunk match fails, scan the entire post-change file (workspace: working tree; commit/range: the file at that revision via `git show`)
 3. **Fallback**: if no match, set `line=0` (unanchored — these go into the summary comment, not inline)
+
+Matching only considers files under review. When `code_comment` omits `path`, the file whose content matched becomes the path; if nothing matches, a single-file review uses that file, otherwise the path is `"unknown"`. Findings carry `line`/`endLine` (both `0` when unanchored).
 
 ### Output Formats
 

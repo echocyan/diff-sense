@@ -67,7 +67,7 @@ _Avoid_: Reviewer, bot
 ### 锚定 (Anchoring)
 
 **锚定 (Anchor)**:
-将发现的 `existing_code` 代码片段映射到被审查文件的精确行号。三步流程：hunk 新侧匹配 → 全文件扫描 → 回退到 line=0。
+将发现的 `existing_code` 代码片段映射到被审查文件的精确行号（line / endLine）。三步流程：hunk 新侧（上下文行 + 新增行）匹配 → 变更后全文件扫描 → 回退到 line=0；比较时忽略空白。未指定文件路径时，以片段命中的文件为准。
 
 **未锚定发现 (Unanchored Finding)**:
 锚定失败（line=0）的发现。在 GitHub Action 输出中，未锚定发现汇入摘要评论，而非行内评论。

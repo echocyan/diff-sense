@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createTools } from "./tools";
+import type { Finding } from "../types";
 
 const exec = promisify(execFile);
 
@@ -13,7 +14,7 @@ let repo: string;
 
 /** 直接调用工具的 execute，绕过 LLM */
 async function run(name: string, input: Record<string, unknown>): Promise<string> {
-  const tools = createTools(repo, []);
+  const tools = createTools(repo, [], async () => ({ path: "unknown", line: 0, endLine: 0 }));
   return tools[name].execute!(input, { toolCallId: "t", messages: [] } as never) as Promise<string>;
 }
 
@@ -30,6 +31,23 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await rm(root, { recursive: true, force: true });
+});
+
+describe("code_comment", () => {
+  it("记录经锚定后的路径与行号，并在结果中返回位置", async () => {
+    const findings: Finding[] = [];
+    const tools = createTools(repo, findings, async (code, path) => ({
+      path: path ?? "src/inferred.ts",
+      line: code === "x()" ? 42 : 0,
+      endLine: code === "x()" ? 43 : 0,
+    }));
+    const out = await tools.code_comment.execute!(
+      { severity: "high", category: "bug", content: "问题", existing_code: "x()" },
+      { toolCallId: "t", messages: [] } as never,
+    );
+    expect(findings[0]).toMatchObject({ path: "src/inferred.ts", line: 42, endLine: 43 });
+    expect(out).toContain("src/inferred.ts:42");
+  });
 });
 
 describe("file_read", () => {

@@ -1,6 +1,6 @@
 import type { LanguageModel } from "ai";
 import type { ReviewResult } from "./types";
-import { getDiff, type DiffMode } from "./diff";
+import { getDiff, readNewFile, type DiffMode } from "./diff";
 import { filterFiles, type FilterOptions } from "./filter";
 import { runReviewAgent } from "./agent/loop";
 import { loadRules } from "./rules/matcher";
@@ -38,5 +38,13 @@ export async function review(options: ReviewOptions): Promise<ReviewResult> {
   }
 
   const rules = await loadRules(cwd);
-  return runReviewAgent({ model, entries, cwd, rules, background, onStepEnd });
+  return runReviewAgent({
+    model,
+    entries,
+    cwd,
+    rules,
+    readNewFile: (path) => readNewFile(diffMode, path, cwd),
+    background,
+    onStepEnd,
+  });
 }

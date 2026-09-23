@@ -2,6 +2,7 @@ import { ToolLoopAgent, hasToolCall, isStepCount } from "ai";
 import type { LanguageModel } from "ai";
 import type { DiffEntry, Finding, ReviewResult, Rule } from "../types";
 import { resolveGroupRules } from "../rules/matcher";
+import { anchor } from "../anchor";
 import { createTools } from "./tools";
 import { buildSystemPrompt, buildUserPrompt } from "./prompts";
 
@@ -15,6 +16,8 @@ interface RunReviewAgentOptions {
   cwd: string;
   /** 生效的规则列表，按组内文件解析后注入 Review Checklist */
   rules: Rule[];
+  /** 读取变更后的完整文件，用于行号锚定的全文件扫描 */
+  readNewFile: (path: string) => Promise<string | undefined>;
   /** 业务上下文 */
   background?: string;
   /** 每个 Agent 步骤结束时的回调 */
@@ -23,10 +26,12 @@ interface RunReviewAgentOptions {
 
 /** 创建 ToolLoopAgent 执行代码审查，收集 findings 后返回结果 */
 export async function runReviewAgent(options: RunReviewAgentOptions): Promise<ReviewResult> {
-  const { model, entries, cwd, rules, background, onStepEnd } = options;
-  // findings 数组由 code_comment 工具的 execute 回调写入
+  const { model, entries, cwd, rules, readNewFile, background, onStepEnd } = options;
+  // findings 数组由 code_comment 工具的 execute 回调写入，写入前先锚定行号
   const findings: Finding[] = [];
-  const tools = createTools(cwd, findings);
+  const tools = createTools(cwd, findings, (code, path) =>
+    anchor(code, path, entries, readNewFile),
+  );
 
   const agent = new ToolLoopAgent({
     model,

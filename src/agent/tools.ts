@@ -5,11 +5,15 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { Finding } from "../types";
+import type { Location } from "../anchor";
 
 const exec = promisify(execFile);
 
+/** 将 existing_code 锚定到文件行号；path 缺省时由实现推断 */
+export type Locate = (existingCode: string, path?: string) => Promise<Location>;
+
 /** 创建审查 Agent 的四个工具：code_comment / file_read / code_search / task_done */
-export function createTools(cwd: string, findings: Finding[]): ToolSet {
+export function createTools(cwd: string, findings: Finding[], locate: Locate): ToolSet {
   return {
     code_comment: tool({
       description: "Report a code review finding",
@@ -19,19 +23,20 @@ export function createTools(cwd: string, findings: Finding[]): ToolSet {
         existing_code: z.string().describe("Code snippet from the diff for anchoring"),
         suggestion_code: z.string().optional().describe("Suggested fix code"),
         category: z.enum(["bug", "security", "performance", "maintainability", "style", "other"]),
-        path: z.string().optional().describe("File path"),
+        path: z.string().optional().describe("File path; inferred from existing_code when omitted"),
       }),
       execute: async (input) => {
+        const loc = await locate(input.existing_code, input.path);
         findings.push({
-          path: input.path ?? "unknown",
-          line: 0,
+          ...loc,
           severity: input.severity,
           category: input.category,
           content: input.content,
           existingCode: input.existing_code,
           suggestionCode: input.suggestion_code,
         });
-        return `Finding recorded: [${input.severity}] ${input.content.slice(0, 80)}`;
+        const at = loc.line > 0 ? `${loc.path}:${loc.line}` : `${loc.path} (unanchored)`;
+        return `Finding recorded at ${at}: [${input.severity}] ${input.content.slice(0, 80)}`;
       },
     }),
 
