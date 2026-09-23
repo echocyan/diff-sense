@@ -30,8 +30,12 @@ export async function getDiff(mode: DiffMode, cwd: string): Promise<DiffEntry[]>
 
 /** 解析 cwd 所在 git 仓库的根目录；diff 中的路径均相对该目录 */
 export async function getRepoRoot(cwd: string): Promise<string> {
-  const { stdout } = await exec("git", ["rev-parse", "--show-toplevel"], { cwd });
-  return stdout.trim();
+  try {
+    const { stdout } = await exec("git", ["rev-parse", "--show-toplevel"], { cwd });
+    return stdout.trim();
+  } catch {
+    throw new Error(`${cwd} 不在 git 仓库中，请在仓库目录内运行`);
+  }
 }
 
 /**

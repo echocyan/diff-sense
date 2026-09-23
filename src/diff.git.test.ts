@@ -4,7 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { readNewFile } from "./diff";
+import { getRepoRoot, readNewFile } from "./diff";
 
 // diff.test.ts 中 mock 了 child_process，读取真实仓库的用例放在本文件
 const exec = promisify(execFile);
@@ -49,5 +49,16 @@ describe("readNewFile", () => {
   it("文件不存在时返回 undefined", async () => {
     expect(await readNewFile({ type: "commit", sha: "HEAD" }, "missing.ts", repo)).toBeUndefined();
     expect(await readNewFile({ type: "workspace" }, "missing.ts", repo)).toBeUndefined();
+  });
+});
+
+describe("getRepoRoot", () => {
+  it("不在 git 仓库中时给出明确提示", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "diff-sense-norepo-"));
+    try {
+      await expect(getRepoRoot(dir)).rejects.toThrow(`${dir} 不在 git 仓库中`);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
