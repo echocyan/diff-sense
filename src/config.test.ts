@@ -8,6 +8,7 @@ import {
   getConfigValue,
   resolveSettings,
   createModel,
+  resolveModel,
 } from "./config";
 
 let dir: string;
@@ -114,5 +115,22 @@ describe("createModel", () => {
     const model = createModel({ provider: "deepseek", model: "deepseek-flash" });
     expect(model).toMatchObject({ modelId: "deepseek-flash" });
     expect((model as unknown as { provider: string }).provider).toMatch(/^deepseek/);
+  });
+});
+
+describe("resolveModel", () => {
+  it("环境变量已提供 provider 与 model 时不读取配置文件", async () => {
+    await setConfigValue("model", "m", path);
+    await writeFile(path, "{ broken");
+    const env = { DIFF_SENSE_PROVIDER: "deepseek", DIFF_SENSE_MODEL: "deepseek-flash" };
+    const { settings } = await resolveModel(env, path);
+    expect(settings).toEqual({ provider: "deepseek", model: "deepseek-flash" });
+  });
+
+  it("否则读取配置文件并合并", async () => {
+    await setConfigValue("provider", "openai", path);
+    await setConfigValue("model", "gpt-5", path);
+    const { settings } = await resolveModel({}, path);
+    expect(settings).toEqual({ provider: "openai", model: "gpt-5" });
   });
 });

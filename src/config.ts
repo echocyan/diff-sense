@@ -124,13 +124,6 @@ function assertOneOf<T extends string>(value: string, options: readonly T[], mes
   throw new Error(`${message}，可选：${options.join("、")}`);
 }
 
-/** 模型解析结果 */
-export interface ResolvedConfig {
-  model: LanguageModel;
-  provider: string;
-  modelId: string;
-}
-
 /** 通过提供商注册表将 provider:model 解析为模型实例 */
 export function createModel(settings: ResolvedSettings): LanguageModel {
   // apiKey 为 undefined 时各提供商回退到自身的环境变量（如 ANTHROPIC_API_KEY）
@@ -143,8 +136,18 @@ export function createModel(settings: ResolvedSettings): LanguageModel {
   return registry.languageModel(`${settings.provider}:${settings.model}`);
 }
 
-/** 读取配置文件并合并环境变量，解析出审查使用的 LLM 模型 */
-export async function resolveModel(): Promise<ResolvedConfig> {
-  const settings = resolveSettings(await readConfigFile(), process.env);
-  return { model: createModel(settings), provider: settings.provider, modelId: settings.model };
+/**
+ * 解析审查使用的 LLM 模型
+ *
+ * 环境变量已提供 provider 与 model 时完全忽略配置文件（CI 中不受本机配置文件影响，
+ * 此时 apiKey 取 DIFF_SENSE_API_KEY 或提供商自身的环境变量）；否则读取配置文件并合并
+ */
+export async function resolveModel(
+  env: Record<string, string | undefined> = process.env,
+  path = CONFIG_FILE,
+): Promise<{ model: LanguageModel; settings: ResolvedSettings }> {
+  const envComplete = Boolean(env[ENV_VARS.provider] && env[ENV_VARS.model]);
+  const file = envComplete ? {} : await readConfigFile(path);
+  const settings = resolveSettings(file, env);
+  return { model: createModel(settings), settings };
 }

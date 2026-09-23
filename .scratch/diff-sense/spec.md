@@ -89,7 +89,7 @@ The system is split into two layers:
 
 ### Configuration System
 
-Two sources, env vars take priority per key (an empty env var counts as unset):
+Two sources, env vars take priority per key (an empty env var counts as unset). When both `DIFF_SENSE_PROVIDER` and `DIFF_SENSE_MODEL` are set, the config file is ignored entirely (CI is unaffected by a local or malformed file; the API key then comes from `DIFF_SENSE_API_KEY` or the provider's own env var):
 
 1. **Environment variables**: `DIFF_SENSE_PROVIDER`, `DIFF_SENSE_MODEL`, `DIFF_SENSE_API_KEY`. Primary for CI.
 2. **Config file**: `~/.diff-sense/config.json` with keys `provider`, `model`, `apiKey` (unknown keys are rejected; file mode `0600` since it may hold the API key). Primary for local dev. Managed via `diff-sense config`.

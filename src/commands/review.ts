@@ -30,8 +30,8 @@ export function registerReviewCommand(program: Command) {
 
       try {
         const diffMode = resolveDiffMode(opts);
-        const { model, provider, modelId } = await resolveModel();
-        s.start(`使用 ${provider}/${modelId} 审查中...`);
+        const { model, settings } = await resolveModel();
+        s.start(`使用 ${settings.provider}/${settings.model} 审查中...`);
         started = true;
 
         const result = await review({
