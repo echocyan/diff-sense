@@ -15,7 +15,13 @@ diff-sense 读取 git diff，由 LLM 审查变更，输出锚定到文件与行�
 diff-sense --version
 ```
 
-命令不存在时，告诉用户需要全局安装，然后执行：
+命令不存在时，先确认 Node.js 版本：diff-sense 需要 Node.js 22.12 或更高。
+
+```bash
+node --version
+```
+
+版本过低时告诉用户先升级 Node.js，不要继续安装：npm 对版本不符只给警告，装上后运行时才会报出难懂的错误。版本满足时，告诉用户需要全局安装，然后执行：
 
 ```bash
 npm install -g diff-sense
