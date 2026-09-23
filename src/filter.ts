@@ -36,6 +36,7 @@ const CODE_EXTENSIONS = new Set([
   ".svelte",
   ".astro",
   ".py",
+  ".pyi",
   ".rb",
   ".go",
   ".rs",
@@ -86,18 +87,18 @@ const CODE_EXTENSIONS = new Set([
   ".jl",
 ]);
 
-/** 无扩展名但属于代码文件的文件名 */
+/** 无扩展名但属于代码文件的文件名（小写，比对时忽略大小写） */
 const CODE_FILENAMES = new Set([
-  "Dockerfile",
-  "Makefile",
-  "Rakefile",
-  "Gemfile",
-  "Brewfile",
-  "Vagrantfile",
-  "Procfile",
-  "Justfile",
-  "Taskfile",
-  "CMakeLists.txt",
+  "dockerfile",
+  "makefile",
+  "rakefile",
+  "gemfile",
+  "brewfile",
+  "vagrantfile",
+  "procfile",
+  "justfile",
+  "taskfile",
+  "cmakelists.txt",
 ]);
 
 /** 扩展名在白名单内、但属于工具生成产物的文件名（lockfile 等） */
@@ -169,7 +170,10 @@ function matchesUserExclude(path: string, patterns: string[]): boolean {
 /** 检查文件是否为代码文件（扩展名白名单 + 特殊文件名如 Dockerfile，排除 lockfile 与压缩产物） */
 function isCodeFile(path: string): boolean {
   const filename = path.split("/").pop() ?? "";
-  if (CODE_FILENAMES.has(filename)) return true;
+  const lower = filename.toLowerCase();
+  if (CODE_FILENAMES.has(lower)) return true;
+  // Dockerfile.prod / Dockerfile.dev 等变体的"扩展名"是环境名，按文件名前缀识别
+  if (lower.startsWith("dockerfile.")) return true;
   if (GENERATED_FILENAMES.has(filename) || /\.min\.(js|css)$/.test(filename)) return false;
   const ext = extname(filename).toLowerCase();
   if (!ext) return false;

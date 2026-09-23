@@ -218,6 +218,11 @@ describe("isCodeFile", () => {
     "Dockerfile",
     "Makefile",
     "CMakeLists.txt",
+    "docker/Dockerfile.prod",
+    "Dockerfile.dev",
+    "dockerfile",
+    "makefile",
+    "types/stub.pyi",
     "tsconfig.json",
     ".github/workflows/ci.yml",
   ])("识别代码文件: %s", (path) => {

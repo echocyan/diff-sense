@@ -29,3 +29,5 @@
 - 审查修复（2026-09-23）（ticket 07 期间）：glob 抽取为 `src/glob.ts` 与规则系统共用，新增 `{a,b}` 多选一；用户排除模式含 `*` 或 `{` 即按 glob 匹配。花括号不配对时按字面匹配。
 
 - 审查修复（2026-09-23）（ticket 07 期间）：`.diff-sense/rules.json` 改由 `src/project-config.ts` 统一读取并用 zod 校验，与规则系统共用；文件不存在时视为空配置，JSON 或结构无效时报错并指明文件（此前静默忽略）。
+
+- 审查修复（2026-09-23，ticket 07 审查）：扩展名白名单补充 `.pyi`；特殊文件名（Dockerfile、Makefile 等）比对忽略大小写；`Dockerfile.prod` 等以 `dockerfile.` 开头的变体按文件名识别为代码文件，与 Dockerfile 规则对齐。
