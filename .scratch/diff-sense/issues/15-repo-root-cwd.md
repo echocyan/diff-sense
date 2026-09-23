@@ -4,11 +4,12 @@
 
 **Blocked by:** 08 (行号锚定)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `review()` 解析仓库根目录，后续 diff 获取、文件过滤、规则加载、Agent 工具、行号锚定统一使用根目录
-- [ ] 集成测试（mock LLM）：从子目录运行时，全文件扫描能锚定发现，项目配置的 exclude 生效，根目录下的未跟踪文件被送审
+- [x] `review()` 解析仓库根目录，后续 diff 获取、文件过滤、规则加载、Agent 工具、行号锚定统一使用根目录
+- [x] 集成测试（mock LLM）：从子目录运行时，全文件扫描能锚定发现，项目配置的 exclude 生效，根目录下的未跟踪文件被送审
 
 ## Comments
 
 - 来源（2026-09-23）：工单 08 审查发现的遗留问题（见工单 08 Comments）。
+- 实现（2026-09-23）：`getRepoRoot()`（`src/diff.ts`）在 `review()` 开头解析根目录；集成测试 `src/review.test.ts` 使用 `ai/test` 的 `MockLanguageModelV4`。

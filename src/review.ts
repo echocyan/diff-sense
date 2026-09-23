@@ -1,6 +1,6 @@
 import type { LanguageModel } from "ai";
 import type { ReviewResult } from "./types";
-import { getDiff, readNewFile, type DiffMode } from "./diff";
+import { getDiff, getRepoRoot, readNewFile, type DiffMode } from "./diff";
 import { filterFiles, type FilterOptions } from "./filter";
 import { runReviewAgent } from "./agent/loop";
 import { loadRules } from "./rules/matcher";
@@ -9,7 +9,7 @@ import { loadRules } from "./rules/matcher";
 export interface ReviewOptions {
   /** LLM 模型实例 */
   model: LanguageModel;
-  /** 项目根目录 */
+  /** 运行目录，可为仓库内任意子目录 */
   cwd: string;
   /** diff 获取模式，默认 workspace */
   diffMode?: DiffMode;
@@ -23,8 +23,10 @@ export interface ReviewOptions {
 
 /** 核心审查编排（测试接缝） */
 export async function review(options: ReviewOptions): Promise<ReviewResult> {
-  const { model, cwd, background, excludePatterns, onStepEnd } = options;
+  const { model, background, excludePatterns, onStepEnd } = options;
   const diffMode = options.diffMode ?? { type: "workspace" };
+  // diff 路径、项目配置、文件读取均以仓库根目录为准，子目录中运行时行为一致
+  const cwd = await getRepoRoot(options.cwd);
 
   const rawEntries = await getDiff(diffMode, cwd);
   if (rawEntries.length === 0) {

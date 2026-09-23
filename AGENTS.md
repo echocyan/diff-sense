@@ -28,6 +28,7 @@ DIFF_SENSE_PROVIDER=deepseek DIFF_SENSE_MODEL=deepseek-flash pnpm build && node 
 ```
 CLI (src/index.ts → src/commands/review.ts)
  → review() 编排 (src/review.ts)        ← 测试接缝
+   → getRepoRoot() (src/diff.ts)         ← 仓库根目录，后续步骤均以此为 cwd（子目录运行亦然）
    → getDiff() (src/diff.ts)             ← git diff 解析（workspace / commit / range）
    → filterFiles() (src/filter.ts)       ← 文件过滤（前置过滤 + 四道门）
    → loadRules() (src/rules/matcher.ts)  ← 项目规则 + 内置规则（src/rules/builtin.ts）

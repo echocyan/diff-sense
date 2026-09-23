@@ -28,6 +28,12 @@ export async function getDiff(mode: DiffMode, cwd: string): Promise<DiffEntry[]>
   }
 }
 
+/** 解析 cwd 所在 git 仓库的根目录；diff 中的路径均相对该目录 */
+export async function getRepoRoot(cwd: string): Promise<string> {
+  const { stdout } = await exec("git", ["rev-parse", "--show-toplevel"], { cwd });
+  return stdout.trim();
+}
+
 /**
  * 读取变更后（新侧）的完整文件内容，文件不存在时返回 undefined
  *
