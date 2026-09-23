@@ -8,7 +8,7 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 - **Standards**: does the code conform to this repo's documented coding standards?
 - **Spec**: does the code faithfully implement the originating issue / spec?
 
-Both axes run as **parallel Codex sub-agents** (via the `codex-subagent` skill) so they don't pollute each other's context, then this skill aggregates their findings.
+Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
 The issue tracker should have been provided to you. If `docs/agents/issue-tracker.md` is missing, tell the user to run `/setup-matt-pocock-skills`.
 
@@ -56,8 +56,6 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 - **Refused Bequest**: a subclass or implementer that ignores or overrides most of what it inherits. → drop the inheritance, use composition.
 
 ### 4. Spawn both sub-agents in parallel
-
-Run each sub-agent as a Codex agent via the `codex-subagent` skill, not as a Claude sub-agent: launch both in parallel, each with its own name (`codex-review-standards`, `codex-review-spec`) and the `read-only` sandbox. The prompts below become the "目标 / 背景 / 汇报格式" of each Codex brief; keep the brief template's "don't delegate further" constraint so Codex reviews the diff itself.
 
 **Standards sub-agent prompt** should include:
 
