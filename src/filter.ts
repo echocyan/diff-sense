@@ -7,7 +7,7 @@ const BINARY_MARKER = "Binary files";
 
 /** 敏感路径模式 */
 const SENSITIVE_PATTERNS: RegExp[] = [
-  /\.env($|\.)/,
+  /(^|\/)\.env($|\.)/,
   /\.pem$/,
   /\.key$/,
   /\.crt$/,
@@ -16,10 +16,7 @@ const SENSITIVE_PATTERNS: RegExp[] = [
   /\.pfx$/,
   /\.jks$/,
   /\.keystore$/,
-  /id_rsa/,
-  /id_ed25519/,
-  /id_ecdsa/,
-  /id_dsa/,
+  /(^|\/)id_(rsa|ed25519|ecdsa|dsa)(\.pub)?$/,
   /credentials\.json$/,
   /secret[s]?\.(json|ya?ml|toml)$/i,
 ];
@@ -88,7 +85,6 @@ const CODE_EXTENSIONS = new Set([
   ".exs",
   ".zig",
   ".r",
-  ".R",
   ".jl",
 ]);
 
@@ -143,26 +139,33 @@ function isSensitivePath(path: string): boolean {
   return SENSITIVE_PATTERNS.some((p) => p.test(path));
 }
 
-/** 检查路径是否匹配用户排除模式，支持 glob（*、**）和子字符串匹配 */
+/**
+ * 检查路径是否匹配用户排除模式
+ *
+ * - 含 `*` 时按 glob 匹配整条路径：`*` 不跨目录，`**` 跨任意层目录（其后紧跟 `/` 时也可匹配零层）
+ * - 不含 `*` 时按路径段匹配：`src` 匹配 `src/a.ts`、`lib/src/a.ts`，但不匹配 `srcs/a.ts`
+ */
 function matchesUserExclude(path: string, patterns: string[]): boolean {
   return patterns.some((pattern) => {
-    if (pattern.includes("*")) {
-      // glob 转正则：先用占位符 ⚑ 保护 **，再替换 *，最后还原 **
-      // 这样 ** → .* 和 * → [^/]* 不会互相干扰
-      const regex = new RegExp(
-        "^" +
-          pattern
-            .replace(/\./g, "\\.")
-            .replace(/\*\*/g, "⚑")
-            .replace(/\*/g, "[^/]*")
-            .replace(/⚑/g, ".*") +
-          "$",
-      );
-      return regex.test(path);
-    }
-    // 无通配符时退化为子字符串匹配
-    return path.includes(pattern);
+    if (pattern.includes("*")) return globToRegExp(pattern).test(path);
+    const p = pattern.replace(/^\/+|\/+$/g, "");
+    return `/${path}/`.includes(`/${p}/`);
   });
+}
+
+/** 将 glob 转为锚定整条路径的正则 */
+function globToRegExp(glob: string): RegExp {
+  const source = glob
+    .split(/(\*\*\/|\*\*|\*)/)
+    .map((part) => {
+      if (part === "**/") return "(?:.*/)?";
+      if (part === "**") return ".*";
+      if (part === "*") return "[^/]*";
+      // 其余字符按字面匹配
+      return part.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
+    })
+    .join("");
+  return new RegExp(`^${source}$`);
 }
 
 /** 检查文件是否为代码文件（扩展名白名单 + 特殊文件名如 Dockerfile） */

@@ -147,12 +147,21 @@ describe("isSensitivePath", () => {
     expect(isSensitivePath(path)).toBe(true);
   });
 
-  it.each(["src/app.ts", "package.json", "README.md", ".eslintrc.json", "src/environment.ts"])(
-    "放行正常路径: %s",
-    (path) => {
-      expect(isSensitivePath(path)).toBe(false);
-    },
-  );
+  it.each(["keys/id_rsa.pub", "config/.env"])("识别敏感路径: %s", (path) => {
+    expect(isSensitivePath(path)).toBe(true);
+  });
+
+  it.each([
+    "src/app.ts",
+    "package.json",
+    "README.md",
+    ".eslintrc.json",
+    "src/environment.ts",
+    "src/config.env.ts",
+    "src/valid_rsa.go",
+  ])("放行正常路径: %s", (path) => {
+    expect(isSensitivePath(path)).toBe(false);
+  });
 });
 
 describe("matchesUserExclude", () => {
@@ -171,6 +180,21 @@ describe("matchesUserExclude", () => {
 
   it("不匹配返回 false", () => {
     expect(matchesUserExclude("src/app.ts", ["docs/**"])).toBe(false);
+  });
+
+  it("无通配符时按路径段匹配，不误伤同名前缀", () => {
+    expect(matchesUserExclude("src/app.ts", ["src"])).toBe(true);
+    expect(matchesUserExclude("src/app.ts", ["src/"])).toBe(true);
+    expect(matchesUserExclude("docsite/app.ts", ["docs"])).toBe(false);
+  });
+
+  it("**/ 可匹配零层目录", () => {
+    expect(matchesUserExclude("x.ts", ["**/x.ts"])).toBe(true);
+  });
+
+  it("正则特殊字符按字面匹配", () => {
+    expect(matchesUserExclude("src/(auth)/a.ts", ["src/(auth)/*.ts"])).toBe(true);
+    expect(matchesUserExclude("src/auth/a.ts", ["src/(auth)/*.ts"])).toBe(false);
   });
 });
 
