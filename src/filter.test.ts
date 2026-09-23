@@ -118,7 +118,7 @@ describe("filterFiles", () => {
   it("四道门综合过滤", async () => {
     const entries = [
       entry({ path: "src/app.ts" }), // 通过
-      entry({ status: "deleted", path: "src/removed.ts" }), // 门 0
+      entry({ status: "deleted", path: "src/removed.ts" }), // 前置过滤
       entry({ diff: "Binary files a/img.png and b/img.png differ", path: "img.png" }), // 门 1
       entry({ path: ".env.production" }), // 门 2
       entry({ path: "src/excluded.ts" }), // 门 3

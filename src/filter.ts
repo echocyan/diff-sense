@@ -122,7 +122,7 @@ export interface FilterOptions {
   cwd?: string;
 }
 
-/** 四道门过滤器：删除 → 二进制 → 敏感路径 → 用户排除 → 扩展名白名单 */
+/** 文件过滤器：前置过滤（已删除文件）后依次经过四道门——二进制 → 敏感路径 → 用户排除 → 扩展名白名单 */
 export async function filterFiles(
   entries: DiffEntry[],
   options: FilterOptions = {},
@@ -132,7 +132,7 @@ export async function filterFiles(
   const userPatterns = [...(options.excludePatterns ?? []), ...configExcludes];
 
   return entries.filter((e) => {
-    // 门 0：排除已删除文件
+    // 前置过滤：已删除文件无变更后代码可锚定，不送审
     if (e.status === "deleted") return false;
     // 门 1：排除二进制文件
     if (e.diff.includes(BINARY_MARKER)) return false;
