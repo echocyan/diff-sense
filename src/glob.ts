@@ -2,7 +2,7 @@
  * 将 glob 转为锚定整条路径的正则
  *
  * 支持：`*` 不跨目录，`**` 跨任意层目录（其后紧跟 `/` 时也可匹配零层），`{a,b}` 多选一；
- * 其余字符按字面匹配
+ * 其余字符按字面匹配。不支持 `?` 与 `[abc]` 字符类，二者按字面字符处理
  */
 export function globToRegExp(glob: string, options: { ignoreCase?: boolean } = {}): RegExp {
   // 花括号不配对时整体按字面匹配，避免生成非法正则
