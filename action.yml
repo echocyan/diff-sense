@@ -18,7 +18,7 @@ branding:
 #         - uses: actions/checkout@v4
 #           with:
 #             fetch-depth: 0
-#         - uses: <owner>/diff-sense@v1
+#         - uses: echocyan/diff-sense@v0.1.0
 #           with:
 #             provider: anthropic
 #             model: claude-sonnet-5

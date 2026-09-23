@@ -45,7 +45,7 @@
     "url": "git+https://github.com/echocyan/diff-sense.git"
   },
   "author": "EchoCyan",
-  "license": "ISC",
+  "license": "MIT",
   "devEngines": {
     "packageManager": {
       "name": "pnpm",

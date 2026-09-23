@@ -72,7 +72,7 @@ The system is split into two layers:
 - **Build tool**: tsup (single-file bundle; runtime dependencies stay external and are installed by npm)
 - **Test framework**: Vitest
 - **Concurrency**: `p-limit` for parallel group review (default concurrency: 4)
-- **npm package**: `diff-sense` (unscoped); CLI only — `exports` exposes nothing but `package.json`, and the tarball contains only `dist/index.js` and `package.json`
+- **npm package**: `diff-sense` (unscoped); CLI only — `exports` exposes nothing but `package.json`, and the tarball contains only `dist/index.js`, `package.json`, `README.md` and `LICENSE` (MIT); publish with `pnpm publish` (`devEngines` restricts the repo to pnpm)
 
 ### CLI Commands
 
