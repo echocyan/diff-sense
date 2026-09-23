@@ -80,7 +80,7 @@ The system is split into two layers:
   - `--commit <sha>` (commit mode)
   - (no flags = workspace mode: staged + unstaged + untracked)
   - `--format text|json` (default: text)
-  - `--audience human|agent` (default: human; agent suppresses progress)
+  - `--audience human|agent` (default: human; agent suppresses progress). Progress is written to stderr and only the result goes to stdout, so `--format json` output can be piped even in human mode
   - `--background <text>` (business context injected into review prompt)
   - `--concurrency <n>` (default: 4)
   - `--exclude <patterns>` (additional exclude globs)

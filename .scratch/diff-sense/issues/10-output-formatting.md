@@ -7,12 +7,12 @@
 **Status:** in-progress
 
 - [x] JSON 格式化器：输出符合 spec 定义的 JSON schema
-- [ ] `--format text|json` CLI 标志，默认 text
-- [ ] `--audience human|agent` CLI 标志，默认 human
-- [ ] Agent 模式下静默生命周期回调（不输出进度信息）
+- [x] `--format text|json` CLI 标志，默认 text
+- [x] `--audience human|agent` CLI 标志，默认 human
+- [x] Agent 模式下静默生命周期回调（不输出进度信息）
 - [x] `--background <text>` 标志：业务上下文注入到审查提示词的 `<user_task>` 区域（随 ticket 05 提前实现）
 - [x] Text 输出展示多行范围（`endLine > line` 时显示为 `src/foo.ts:42-45`，`endLine` 由 ticket 08 提供）
-- [ ] 单元测试：JSON 输出可解析且 schema 正确、text 输出格式符合预期
+- [x] 单元测试：JSON 输出可解析且 schema 正确、text 输出格式符合预期
 
 ## Comments
 
