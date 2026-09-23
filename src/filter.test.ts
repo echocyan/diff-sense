@@ -188,6 +188,11 @@ describe("matchesUserExclude", () => {
     expect(matchesUserExclude("docsite/app.ts", ["docs"])).toBe(false);
   });
 
+  it("仅含 {a,b} 的模式也按 glob 匹配", () => {
+    expect(matchesUserExclude("src/a.ts", ["src/{a,b}.ts"])).toBe(true);
+    expect(matchesUserExclude("src/c.ts", ["src/{a,b}.ts"])).toBe(false);
+  });
+
   it("**/ 可匹配零层目录", () => {
     expect(matchesUserExclude("x.ts", ["**/x.ts"])).toBe(true);
   });

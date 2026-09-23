@@ -25,3 +25,5 @@
 - 审查修复（2026-09-23）：**决定**——扩展名白名单移除 `.md` / `.mdx` / `.txt`；保留 json / yaml / toml，因为 CI workflow、tsconfig 等配置变更值得审查；同时排除 lockfile（`pnpm-lock.yaml`、`package-lock.json` 等）和 `*.min.js` / `*.min.css`。
 
 - 审查修复（2026-09-23）：**决定**——保留"排除已删除文件"，定义为四道门之前的**前置过滤**（见 CONTEXT.md），不计入四道门；代码注释中的"门 0"同步改名。
+
+- 审查修复（2026-09-23）（ticket 07 期间）：glob 抽取为 `src/glob.ts` 与规则系统共用，新增 `{a,b}` 多选一；用户排除模式含 `*` 或 `{` 即按 glob 匹配。花括号不配对时按字面匹配。

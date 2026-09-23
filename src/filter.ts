@@ -155,12 +155,12 @@ function isSensitivePath(path: string): boolean {
 /**
  * 检查路径是否匹配用户排除模式
  *
- * - 含 `*` 时按 glob 匹配整条路径：`*` 不跨目录，`**` 跨任意层目录（其后紧跟 `/` 时也可匹配零层）
- * - 不含 `*` 时按路径段匹配：`src` 匹配 `src/a.ts`、`lib/src/a.ts`，但不匹配 `srcs/a.ts`
+ * - 含 `*` 或 `{` 时按 glob 匹配整条路径，语法见 {@link globToRegExp}
+ * - 不含 `*` / `{` 时按路径段匹配：`src` 匹配 `src/a.ts`、`lib/src/a.ts`，但不匹配 `srcs/a.ts`
  */
 function matchesUserExclude(path: string, patterns: string[]): boolean {
   return patterns.some((pattern) => {
-    if (pattern.includes("*")) return globToRegExp(pattern).test(path);
+    if (/[*{]/.test(pattern)) return globToRegExp(pattern).test(path);
     const p = pattern.replace(/^\/+|\/+$/g, "");
     return `/${path}/`.includes(`/${p}/`);
   });
