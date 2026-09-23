@@ -2,7 +2,7 @@ import { ToolLoopAgent, hasToolCall, isStepCount } from "ai";
 import type { LanguageModel } from "ai";
 import type { DiffEntry, Finding, ReviewResult, Rule } from "../types";
 import { resolveGroupRules } from "../rules/matcher";
-import { anchor } from "../anchor";
+import { anchor, type ReadNewFile } from "../anchor";
 import { createTools } from "./tools";
 import { buildSystemPrompt, buildUserPrompt } from "./prompts";
 
@@ -17,7 +17,7 @@ interface RunReviewAgentOptions {
   /** 生效的规则列表，按组内文件解析后注入 Review Checklist */
   rules: Rule[];
   /** 读取变更后的完整文件，用于行号锚定的全文件扫描 */
-  readNewFile: (path: string) => Promise<string | undefined>;
+  readNewFile: ReadNewFile;
   /** 业务上下文 */
   background?: string;
   /** 每个 Agent 步骤结束时的回调 */

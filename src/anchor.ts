@@ -1,14 +1,7 @@
-import type { DiffEntry } from "./types";
+import type { DiffEntry, Location } from "./types";
 
-/** 发现锚定到的代码位置；line=0 表示未锚定 */
-export interface Location {
-  /** 文件路径 */
-  path: string;
-  /** 起始行号（变更后文件，1 起），未锚定时为 0 */
-  line: number;
-  /** 结束行号，未锚定时为 0 */
-  endLine: number;
-}
+/** 读取变更后的完整文件，文件不存在时返回 undefined */
+export type ReadNewFile = (path: string) => Promise<string | undefined>;
 
 /** 带行号的一行代码 */
 interface NumberedLine {
@@ -30,7 +23,7 @@ export async function anchor(
   existingCode: string,
   path: string | undefined,
   entries: DiffEntry[],
-  readNewFile: (path: string) => Promise<string | undefined>,
+  readNewFile: ReadNewFile,
 ): Promise<Location> {
   const given = path?.replace(/^\.\//, "");
   const inReview = entries.filter((e) => e.path === given);
@@ -93,7 +86,7 @@ function snippetVariants(snippet: string): string[][] {
 function matchSnippet(
   snippets: string[][],
   lines: NumberedLine[],
-): { line: number; endLine: number } | undefined {
+): Omit<Location, "path"> | undefined {
   const source = lines.map((l) => ({ ...l, text: normalize(l.text) })).filter((l) => l.text);
   for (const target of snippets) {
     for (let i = 0; i + target.length <= source.length; i++) {

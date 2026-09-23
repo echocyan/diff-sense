@@ -42,7 +42,8 @@ CLI (src/index.ts → src/commands/review.ts)
 ### 核心类型 (`src/types.ts`)
 
 - `DiffEntry` — 一个文件的 diff 元数据
-- `Finding` — 一条锚定到代码位置的审查发现
+- `Location` — 代码位置（path + line/endLine，line=0 表示未锚定）
+- `Finding` — 一条锚定到代码位置的审查发现（继承 `Location`）
 - `ReviewResult` — 审查结果（findings + token 用量 + 耗时）
 - `Rule` — 一条审查规则（glob 模式 + 注入 Review Checklist 的规则文本）
 

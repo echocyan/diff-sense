@@ -4,8 +4,7 @@ import { readFile, realpath } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import type { Finding } from "../types";
-import type { Location } from "../anchor";
+import type { Finding, Location } from "../types";
 
 const exec = promisify(execFile);
 
