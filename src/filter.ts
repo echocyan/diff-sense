@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 import type { DiffEntry } from "./types";
+import { globToRegExp } from "./glob";
 
 // git diff 对二进制文件输出的标记前缀
 const BINARY_MARKER = "Binary files";
@@ -163,21 +164,6 @@ function matchesUserExclude(path: string, patterns: string[]): boolean {
     const p = pattern.replace(/^\/+|\/+$/g, "");
     return `/${path}/`.includes(`/${p}/`);
   });
-}
-
-/** 将 glob 转为锚定整条路径的正则 */
-function globToRegExp(glob: string): RegExp {
-  const source = glob
-    .split(/(\*\*\/|\*\*|\*)/)
-    .map((part) => {
-      if (part === "**/") return "(?:.*/)?";
-      if (part === "**") return ".*";
-      if (part === "*") return "[^/]*";
-      // 其余字符按字面匹配
-      return part.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
-    })
-    .join("");
-  return new RegExp(`^${source}$`);
 }
 
 /** 检查文件是否为代码文件（扩展名白名单 + 特殊文件名如 Dockerfile，排除 lockfile 与压缩产物） */
