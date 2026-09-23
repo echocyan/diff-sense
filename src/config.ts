@@ -60,8 +60,9 @@ export async function readConfigFile(path = CONFIG_FILE): Promise<Settings> {
 /** 写入单个配置项；文件含 API Key，权限设为仅所有者可读写 */
 export async function setConfigValue(key: string, value: string, path = CONFIG_FILE) {
   const settings = await readConfigFile(path);
-  const k = assertConfigKey(key);
-  if (k === "provider") settings.provider = assertProvider(value);
+  const k = assertOneOf(key, CONFIG_KEYS, `未知配置项 ${key}`);
+  if (k === "provider")
+    settings.provider = assertOneOf(value, PROVIDERS, `不支持的 provider：${value}`);
   else settings[k] = value;
   await mkdir(dirname(path), { recursive: true, mode: 0o700 });
   await writeFile(path, JSON.stringify(settings, null, 2) + "\n", { mode: 0o600 });
@@ -71,7 +72,7 @@ export async function setConfigValue(key: string, value: string, path = CONFIG_F
 
 /** 读取单个配置项，未设置时返回 undefined */
 export async function getConfigValue(key: string, path = CONFIG_FILE) {
-  return (await readConfigFile(path))[assertConfigKey(key)];
+  return (await readConfigFile(path))[assertOneOf(key, CONFIG_KEYS, `未知配置项 ${key}`)];
 }
 
 /** 各配置项对应的环境变量，优先级高于配置文件 */
@@ -93,30 +94,34 @@ export function resolveSettings(
   file: Settings,
   env: Record<string, string | undefined>,
 ): ResolvedSettings {
-  const pick = (key: ConfigKey) => env[ENV_VARS[key]] || file[key];
-  const provider = pick("provider");
-  const model = pick("model");
+  const fromEnv = (key: ConfigKey) => env[ENV_VARS[key]] || undefined;
+  const envProvider = fromEnv("provider");
+  const provider =
+    envProvider === undefined
+      ? file.provider
+      : assertOneOf(
+          envProvider,
+          PROVIDERS,
+          `${ENV_VARS.provider} 中不支持的 provider：${envProvider}`,
+        );
+  const model = fromEnv("model") ?? file.model;
 
   if (!provider || !model) {
-    const missing = (["provider", "model"] as const).filter((k) => !pick(k));
+    const missing = (["provider", "model"] as const).filter((k) => !{ provider, model }[k]);
     throw new Error(
       `缺少 ${missing.join("、")}：请运行 diff-sense config 进行配置，` +
         `或设置环境变量 ${missing.map((k) => ENV_VARS[k]).join("、")}`,
     );
   }
-  return { provider: assertProvider(provider), model, apiKey: pick("apiKey") };
+  // 配置文件中的 apiKey 属于文件中的 provider；环境变量切换到其他提供商时不沿用，避免把密钥发给错误的服务
+  const fileKey = provider === file.provider ? file.apiKey : undefined;
+  return { provider, model, apiKey: fromEnv("apiKey") ?? fileKey };
 }
 
-/** 校验配置项名称 */
-function assertConfigKey(key: string): ConfigKey {
-  if ((CONFIG_KEYS as readonly string[]).includes(key)) return key as ConfigKey;
-  throw new Error(`未知配置项 ${key}，可选：${CONFIG_KEYS.join("、")}`);
-}
-
-/** 校验提供商名称 */
-function assertProvider(provider: string): Provider {
-  if ((PROVIDERS as readonly string[]).includes(provider)) return provider as Provider;
-  throw new Error(`不支持的 provider：${provider}，可选：${PROVIDERS.join("、")}`);
+/** 校验取值属于给定选项，否则以 message 加上可选值列表报错 */
+function assertOneOf<T extends string>(value: string, options: readonly T[], message: string): T {
+  if ((options as readonly string[]).includes(value)) return value as T;
+  throw new Error(`${message}，可选：${options.join("、")}`);
 }
 
 /** 模型解析结果 */

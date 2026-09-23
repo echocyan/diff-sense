@@ -94,7 +94,7 @@ Two sources, env vars take priority per key (an empty env var counts as unset):
 1. **Environment variables**: `DIFF_SENSE_PROVIDER`, `DIFF_SENSE_MODEL`, `DIFF_SENSE_API_KEY`. Primary for CI.
 2. **Config file**: `~/.diff-sense/config.json` with keys `provider`, `model`, `apiKey` (unknown keys are rejected; file mode `0600` since it may hold the API key). Primary for local dev. Managed via `diff-sense config`.
 
-`provider` and `model` are required; a missing one produces an error naming both ways to set it. `provider` must be one of `anthropic`, `deepseek`, `openai`. `apiKey` is optional: when unset, each provider falls back to its own env var (e.g. `ANTHROPIC_API_KEY`).
+`provider` and `model` are required; a missing one produces an error naming both ways to set it. `provider` must be one of `anthropic`, `deepseek`, `openai`. `apiKey` is optional: when unset, each provider falls back to its own env var (e.g. `ANTHROPIC_API_KEY`). The config file's `apiKey` belongs to the config file's `provider`: when `DIFF_SENSE_PROVIDER` selects a different provider, the file's key is not used (so a key is never sent to the wrong service). An invalid `DIFF_SENSE_PROVIDER` is reported as coming from that env var.
 
 ### Multi-Provider LLM Support
 

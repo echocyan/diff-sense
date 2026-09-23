@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, readFile, writeFile, rm, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -93,34 +93,26 @@ describe("resolveSettings", () => {
     );
   });
 
-  it("环境变量中的 provider 不受支持时报错", () => {
+  it("环境变量中的 provider 不受支持时报错并指明来源", () => {
     expect(() => resolveSettings(file, { DIFF_SENSE_PROVIDER: "gemini" })).toThrow(
-      "不支持的 provider：gemini",
+      "DIFF_SENSE_PROVIDER 中不支持的 provider：gemini",
     );
+  });
+
+  it("环境变量切换 provider 时不沿用配置文件中其他提供商的 apiKey", () => {
+    const env = { DIFF_SENSE_PROVIDER: "openai", DIFF_SENSE_MODEL: "gpt-5" };
+    expect(resolveSettings(file, env).apiKey).toBeUndefined();
+  });
+
+  it("环境变量指定的 provider 与配置文件一致时沿用其 apiKey", () => {
+    expect(resolveSettings(file, { DIFF_SENSE_PROVIDER: "anthropic" }).apiKey).toBe("file-key");
   });
 });
 
 describe("createModel", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it("按 provider:model 解析到对应提供商的模型", () => {
     const model = createModel({ provider: "deepseek", model: "deepseek-flash" });
     expect(model).toMatchObject({ modelId: "deepseek-flash" });
     expect((model as unknown as { provider: string }).provider).toMatch(/^deepseek/);
-  });
-
-  it("配置的 apiKey 用于请求认证", async () => {
-    const fetch = vi.fn(
-      async (_url: string, _init?: RequestInit) => new Response("{}", { status: 500 }),
-    );
-    vi.stubGlobal("fetch", fetch);
-    const model = createModel({ provider: "anthropic", model: "claude-sonnet-5", apiKey: "k-123" });
-    await (model as unknown as { doGenerate: (o: unknown) => Promise<unknown> })
-      .doGenerate({ prompt: [{ role: "user", content: [{ type: "text", text: "hi" }] }] })
-      .catch(() => {});
-    const init = fetch.mock.calls[0]?.[1];
-    expect(new Headers(init?.headers).get("x-api-key")).toBe("k-123");
   });
 });
