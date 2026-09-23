@@ -18,6 +18,7 @@
 
 - 实现记录（2026-09-23）：运行时依赖的最低 Node 版本为 22.12（`commander@15` 要求 `>=22.12.0`，`ai` 与 `@ai-sdk/*` 要求 `>=22`），因此 `engines` 设为 `>=22.12.0`，tsup target 由 node20 改为 node22.12，AGENTS.md 同步。dependencies 保持 external（tsup 默认），由 npm 安装；产出单个带 shebang 且可执行的 `dist/index.js`。`exports` 只暴露 `package.json`：diff-sense 是纯 CLI，没有可 import 的 API，入口被 import 时会直接执行命令。新增 `prepack`（构建）与 `prepublishOnly`（typecheck + lint + test）。
 - 验证（2026-09-23）：仓库的 `devEngines` 限定 pnpm，`npm pack` 会被拒绝，用 `pnpm pack`；tarball 仅含 `package/dist/index.js`（0755）与 `package/package.json`。在干净目录中以独立 npm 缓存安装 tarball 后，`npx diff-sense version` 输出 `0.1.0`，`--help`、`config check`、无改动仓库上的 `review --format json` 均正常，`import("diff-sense")` 报 `ERR_PACKAGE_PATH_NOT_EXPORTED`。
-- 遗留（2026-09-23）：
-  - 仓库没有 README 与 LICENSE 文件：npm 页面没有说明，`license` 字段仍为 `ISC` 但未附许可证全文。许可证由维护者决定。
-  - 尚未实际发布到 npm（需要维护者的 npm 账号），发布后工单 12 的 `npm install -g diff-sense` 与工单 13 的 `npx diff-sense@<version>` 才可用。
+- 审查修复（2026-09-23，两轴审查）：tsup target 改由 `engines.node` 推导，AGENTS.md 与 spec 改为引用 `engines`，最低 Node 版本只在一处维护（Skill 面向外部用户，仍写明 22.12）；`@types/node` 降为 `^22`，typecheck 按最低支持版本拒绝更新的 API；`prepublishOnly` 增加格式检查；修正 `splitting` 注释（防护日后引入动态 import，而非单文件产出的原因）；Skill 安装前检查 Node.js 版本；新增 README 与 MIT LICENSE（`license` 由 ISC 改为 MIT），tarball 随之包含两者。
+- 发布（2026-09-23）：仓库的 `devEngines` 限定 pnpm，发布须用 `pnpm publish`，README 的「开发」一节已写明。
+- 审查未采纳（2026-09-23，两轴审查）：11f4ed6 把 Node 版本提升与发布元数据放在同一提交，已是历史提交，不改写。
+- 遗留（2026-09-23）：尚未实际发布到 npm（需要维护者的 npm 账号），也未创建与版本号一致的 git 标签（如 `v0.1.0`）；发布并打标签后，工单 12 的 `npm install -g diff-sense` 与工单 13 的 `uses: echocyan/diff-sense@v0.1.0` 才可用。
