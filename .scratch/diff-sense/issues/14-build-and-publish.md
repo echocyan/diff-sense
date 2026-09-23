@@ -22,3 +22,4 @@
 - 发布（2026-09-23）：仓库的 `devEngines` 限定 pnpm，发布须用 `pnpm publish`，README 的「开发」一节已写明。
 - 审查未采纳（2026-09-23，两轴审查）：11f4ed6 把 Node 版本提升与发布元数据放在同一提交，已是历史提交，不改写。
 - 遗留（2026-09-23）：尚未实际发布到 npm（需要维护者的 npm 账号），也未创建与版本号一致的 git 标签（如 `v0.1.0`）；发布并打标签后，工单 12 的 `npm install -g diff-sense` 与工单 13 的 `uses: echocyan/diff-sense@v0.1.0` 才可用。
+- 决策（2026-09-23）：`pnpm publish` 报错 `Package name too similar to existing package diffsense`（npm 比较包名时忽略标点，防仿冒），改用作用域包 `@echocyan/diff-sense` 并声明 `publishConfig.access: public`；命令名仍为 `diff-sense`。`action.yml` 改为从 `package.json` 同时读取包名与版本，以 `npx --package <name>@<version> -- diff-sense` 运行；README、Skill 与 spec 中的安装命令同步。

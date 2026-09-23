@@ -49,7 +49,7 @@ diff-sense 是一个轻量级的 AI 驱动代码审查 CLI 工具，用 TypeScri
 30. As a developer, I want the review agent to be able to read full file contents via a file_read tool, so that it has enough context to make accurate judgments
 31. As a developer, I want the review agent to be able to search the codebase via a code_search tool, so that it can check references and usages
 32. As a developer, I want the review to run multiple file groups concurrently, so that large changesets are reviewed faster
-33. As a developer, I want to install diff-sense via `npm install -g diff-sense` or `npx diff-sense`, so that installation is standard for the Node ecosystem
+33. As a developer, I want to install diff-sense via `npm install -g @echocyan/diff-sense` or `npx @echocyan/diff-sense`, so that installation is standard for the Node ecosystem
 
 ## Implementation Decisions
 
@@ -72,7 +72,7 @@ The system is split into two layers:
 - **Build tool**: tsup (single-file bundle; runtime dependencies stay external and are installed by npm)
 - **Test framework**: Vitest
 - **Concurrency**: `p-limit` for parallel group review (default concurrency: 4)
-- **npm package**: `diff-sense` (unscoped); CLI only — `exports` exposes nothing but `package.json`, and the tarball contains only `dist/index.js`, `package.json`, `README.md` and `LICENSE` (MIT); publish with `pnpm publish` (`devEngines` restricts the repo to pnpm)
+- **npm package**: `@echocyan/diff-sense` (scoped, `publishConfig.access: public`; the unscoped `diff-sense` is rejected by npm as too similar to the existing `diffsense`), command name `diff-sense`; CLI only — `exports` exposes nothing but `package.json`, and the tarball contains only `dist/index.js`, `package.json`, `README.md` and `LICENSE` (MIT); publish with `pnpm publish` (`devEngines` restricts the repo to pnpm)
 
 ### CLI Commands
 
@@ -170,7 +170,7 @@ Matching only considers files under review. `path` is normalised (leading `./` s
 
 - `action.yml` at repository root defines the Action
 - Inputs: `provider`, `model`, `api_key` (from secrets), `from_ref`, `to_ref`, `concurrency`, `background`
-- The action: installs Node.js, reviews from the merge-base of `from_ref` and `to_ref` (defaults: the PR base / head SHAs; requires `fetch-depth: 0`) with `npx diff-sense review --from ... --to ... --format github`, then posts the resulting payload via `gh` (`review` → Pull Request Review API with `commit_id` pinned to the reviewed commit; `summary` → PR conversation comment)
+- The action: installs Node.js, reviews from the merge-base of `from_ref` and `to_ref` (defaults: the PR base / head SHAs; requires `fetch-depth: 0`) with `npx --package <name>@<version> -- diff-sense review --from ... --to ... --format github` (name and version read from the Action repository's `package.json`), then posts the resulting payload via `gh` (`review` → Pull Request Review API with `commit_id` pinned to the reviewed commit; `summary` → PR conversation comment)
 - Inline comments for findings whose whole range lies inside one hunk of the PR diff (using the Pull Request Review API)
 - Summary comment for every other finding (unanchored `line=0`, outside the hunks, or spanning hunks) aggregated as a Markdown list; posted before the review, and if the Review API rejects the inline comments they are posted as a plain PR comment instead, so no finding is lost
 - Fork PRs under the `pull_request` event are skipped up front with a notice (no secrets, read-only token)
@@ -179,7 +179,7 @@ Matching only considers files under review. `path` is normalised (leading `./` s
 ### Skill Integration
 
 - `skills/diff-sense/SKILL.md` (skills.sh layout: one directory per skill with YAML frontmatter; source in this repo, distributed via skills.sh; users install it into `.agents/`, `.claude/`, etc.) containing instructions for AI agents:
-  1. Check if `diff-sense` CLI is installed (install via `npm install -g diff-sense` if not)
+  1. Check if `diff-sense` CLI is installed (install via `npm install -g @echocyan/diff-sense` if not)
   2. Check if LLM is configured (`diff-sense config check`, which reflects env vars merged with the config file)
   3. Extract business context from the current task
   4. Run `diff-sense review --format json --background "..."`

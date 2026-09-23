@@ -111,13 +111,13 @@ runs:
         ACTION_PATH: ${{ github.action_path }}
       run: |
         set -euo pipefail
-        # CLI 版本与 Action 版本一致：取 Action 仓库 package.json 中的版本号
-        version=$(node -p 'require(process.env.ACTION_PATH + "/package.json").version')
+        # CLI 包名与版本取自 Action 仓库的 package.json，与 Action 标签一致
+        package=$(node -p 'const p = require(process.env.ACTION_PATH + "/package.json"); p.name + "@" + p.version')
         args=(review --from "$BASE" --to "$HEAD" --format github --concurrency "$CONCURRENCY")
         if [ -n "$BACKGROUND" ]; then
           args+=(--background "$BACKGROUND")
         fi
-        npx --yes "diff-sense@$version" "${args[@]}" > "$RUNNER_TEMP/diff-sense-review.json"
+        npx --yes --package "$package" -- diff-sense "${args[@]}" > "$RUNNER_TEMP/diff-sense-review.json"
 
     - name: 发布审查评论
       if: steps.range.outputs.skip != 'true'

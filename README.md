@@ -9,12 +9,12 @@
 
 ## 安装
 
-需要 Node.js 22.12 或更高版本。
+需要 Node.js 22.12 或更高版本。npm 包名为 `@echocyan/diff-sense`，安装后的命令为 `diff-sense`。
 
 ```bash
-npm install -g diff-sense
+npm install -g @echocyan/diff-sense
 # 或者不安装，直接运行
-npx diff-sense review
+npx @echocyan/diff-sense review
 ```
 
 ## 配置

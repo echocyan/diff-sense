@@ -21,10 +21,10 @@ diff-sense --version
 node --version
 ```
 
-版本过低时告诉用户先升级 Node.js，不要继续安装：npm 对版本不符只给警告，装上后运行时才会报出难懂的错误。版本满足时，告诉用户需要全局安装，然后执行：
+版本过低时告诉用户先升级 Node.js，不要继续安装：npm 对版本不符只给警告，装上后运行时才会报出难懂的错误。版本满足时，告诉用户需要全局安装（npm 包名为 `@echocyan/diff-sense`，命令名为 `diff-sense`），然后执行：
 
 ```bash
-npm install -g diff-sense
+npm install -g @echocyan/diff-sense
 ```
 
 全局安装会修改用户环境；如果当前环境要求先征得同意，就先询问。

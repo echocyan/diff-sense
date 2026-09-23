@@ -25,7 +25,7 @@ diff-sense v1 的所有设计决策已落定——架构、模块划分、CLI �
 - **规则系统**：两层——内置默认规则 → 项目配置（`.diff-sense/rules.json`）
 - **Agent 工具**：task_done / code_comment / file_read / code_search（4 个）
 - **配置系统**：环境变量优先 + 配置文件兜底（`~/.diff-sense/config.json`），config 命令有参数走 CLI、无参数走交互式
-- **npm 发布**：包名 `diff-sense`（unscoped），支持 `npx diff-sense`
+- **npm 发布**：包名 `@echocyan/diff-sense`（作用域包；unscoped 的 `diff-sense` 因与已有的 `diffsense` 过于相似被 npm 拒绝），命令名仍为 `diff-sense`，支持 `npx @echocyan/diff-sense`
 - **审查范围**：通用 LLM 审查 + 按语言/文件类型的规则引导
 - **CLI 命令**：`review` + `config` + `version`，框架 Commander.js
 - **Prompt 模板**：grouping + review 两个，参考 OCR 实现
