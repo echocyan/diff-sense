@@ -1,5 +1,6 @@
 import { hunkNewSides } from "../diff";
 import type { DiffEntry, Finding, ReviewResult } from "../types";
+import { lineRange } from "./location";
 
 /** Pull Request Review API 的一条行内评论（均评论变更后的一侧） */
 export interface GithubReviewComment {
@@ -16,7 +17,7 @@ export interface GithubReviewComment {
 /** GitHub 输出：PR Review 请求体与摘要评论，供 GitHub Action 直接发布 */
 export interface GithubReview {
   /** `POST /repos/{owner}/{repo}/pulls/{number}/reviews` 的请求体；没有行内评论时为 null */
-  review: { event: "COMMENT"; comments: GithubReviewComment[] } | null;
+  review: { event: "COMMENT"; body: string; comments: GithubReviewComment[] } | null;
   /** 无法作为行内评论的发现，聚合为一条 PR 普通评论的 Markdown；没有时为 null */
   summary: string | null;
 }
@@ -33,22 +34,36 @@ export function formatGithub(result: ReviewResult): string {
   const rest: Finding[] = [];
   for (const f of result.findings) {
     const ranges = hunkRanges.get(f.path) ?? [];
-    const inHunk = f.line > 0 && ranges.some(([start, end]) => start <= f.line && f.endLine <= end);
+    const inHunk = f.line > 0 && ranges.some((r) => r.start <= f.line && f.endLine <= r.end);
     (inHunk ? inline : rest).push(f);
   }
 
   const output: GithubReview = {
-    review: inline.length > 0 ? { event: "COMMENT", comments: inline.map(toComment) } : null,
+    review:
+      inline.length > 0
+        ? {
+            event: "COMMENT",
+            // COMMENT 事件的 body 在文档中为必填，带上简短说明
+            body: `diff-sense 审查：${inline.length} 条行内评论`,
+            comments: inline.map(toComment),
+          }
+        : null,
     summary: rest.length > 0 ? formatSummary(rest) : null,
   };
   return JSON.stringify(output, null, 2);
 }
 
-/** 每个 hunk 新侧的行号范围 [起, 止]；纯删除的 hunk 没有新侧，不产生范围 */
-function newSideRanges(entry: DiffEntry): [number, number][] {
+/** 行号闭区间 */
+interface LineSpan {
+  start: number;
+  end: number;
+}
+
+/** 每个 hunk 新侧的行号范围；纯删除的 hunk 没有新侧，不产生范围 */
+function newSideRanges(entry: DiffEntry): LineSpan[] {
   return hunkNewSides(entry.diff)
     .filter((lines) => lines.length > 0)
-    .map((lines) => [lines[0].line, lines[lines.length - 1].line]);
+    .map((lines) => ({ start: lines[0].line, end: lines[lines.length - 1].line }));
 }
 
 /** 构造行内评论；多行发现使用 start_line 标出起始行 */
@@ -72,7 +87,7 @@ function formatSummary(findings: Finding[]): string {
   const items = findings.map((f) => {
     const location = f.line > 0 ? `${f.path}:${lineRange(f)}` : f.path;
     const detail = [f.content, ...suggestion(f)].map(indent).join("\n");
-    return `- ${heading(f)} · \`${location}\`\n${detail}`;
+    return `- ${heading(f)} · ${inlineCode(location)}\n${detail}`;
   });
   return [
     "## diff-sense 审查摘要",
@@ -88,19 +103,25 @@ function heading(f: Finding): string {
   return `**${f.severity.toUpperCase()}** · ${f.category}`;
 }
 
-/** 行号范围：单行为 `line`，多行为 `line-endLine` */
-function lineRange(f: Finding): string {
-  return f.endLine > f.line ? `${f.line}-${f.endLine}` : `${f.line}`;
-}
-
 /** 建议代码块（语言取文件扩展名）；没有建议时为空 */
 function suggestion(f: Finding): string[] {
   if (!f.suggestionCode) return [];
   const extension = /\.(\w+)$/.exec(f.path)?.[1] ?? "";
-  // 围栏必须长于代码中出现的任何反引号串，否则代码块会被提前截断
-  const longestRun = Math.max(0, ...(f.suggestionCode.match(/`+/g) ?? []).map((s) => s.length));
-  const fence = "`".repeat(Math.max(3, longestRun + 1));
+  const fence = backticks(f.suggestionCode, 3);
   return ["", "建议修改：", "", `${fence}${extension}`, f.suggestionCode, fence];
+}
+
+/** 行内代码；定界符长于文本中的反引号串，文本以反引号开头或结尾时两侧补空格 */
+function inlineCode(text: string): string {
+  const fence = backticks(text, 1);
+  const padded = text.startsWith("`") || text.endsWith("`") ? ` ${text} ` : text;
+  return `${fence}${padded}${fence}`;
+}
+
+/** 代码定界符：长于文本中最长的反引号串（否则代码会被提前截断），且不短于 min */
+function backticks(text: string, min: number): string {
+  const longestRun = Math.max(0, ...(text.match(/`+/g) ?? []).map((s) => s.length));
+  return "`".repeat(Math.max(min, longestRun + 1));
 }
 
 /** Markdown 列表项的续行缩进两格；空行保持为空，避免产生行尾空白 */

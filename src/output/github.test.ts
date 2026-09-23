@@ -47,6 +47,7 @@ describe("formatGithub", () => {
     const { review, summary } = format([finding({ suggestionCode: "const b = 2;" })]);
     expect(summary).toBeNull();
     expect(review?.event).toBe("COMMENT");
+    expect(review?.body).toContain("diff-sense");
     expect(review?.comments).toHaveLength(1);
     const [comment] = review!.comments;
     expect(comment).toMatchObject({ path: "src/foo.ts", line: 11, side: "RIGHT" });
@@ -75,7 +76,7 @@ describe("formatGithub", () => {
       finding({ path: "src/other.ts", content: "不在 diff 中的文件" }),
     ]);
     expect(review).toBeNull();
-    expect(summary).toContain("4");
+    expect(summary?.match(/^- /gm)).toHaveLength(4);
     expect(summary).toContain("`src/foo.ts`");
     expect(summary).toContain("`src/foo.ts:20`");
     expect(summary).toContain("`src/foo.ts:12-30`");
@@ -88,6 +89,11 @@ describe("formatGithub", () => {
     const { review, summary } = format([finding(), finding({ line: 0, endLine: 0 })]);
     expect(review?.comments).toHaveLength(1);
     expect(summary).not.toBeNull();
+  });
+
+  it("路径含反引号时摘要中的行内代码不被截断", () => {
+    const { summary } = format([finding({ path: "a`b.ts", line: 0, endLine: 0 })]);
+    expect(summary).toContain("``a`b.ts``");
   });
 
   it("没有发现时 review 与 summary 均为 null", () => {
