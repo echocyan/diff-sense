@@ -3,10 +3,11 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
-import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
+import { chmod, mkdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { z } from "zod";
+import { readJsonConfig } from "./json-config";
 
 /** 用户级配置文件路径 */
 export const CONFIG_FILE = join(homedir(), ".diff-sense", "config.json");
@@ -35,26 +36,7 @@ export type Settings = z.infer<typeof SettingsSchema>;
 
 /** 读取配置文件，不存在时返回空配置 */
 export async function readConfigFile(path = CONFIG_FILE): Promise<Settings> {
-  let raw: string;
-  try {
-    raw = await readFile(path, "utf-8");
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") return {};
-    throw err;
-  }
-
-  let json: unknown;
-  try {
-    json = JSON.parse(raw);
-  } catch (err) {
-    throw new Error(`${path} 不是合法的 JSON：${(err as Error).message}`);
-  }
-
-  const result = SettingsSchema.safeParse(json);
-  if (!result.success) {
-    throw new Error(`${path} 格式无效：\n${z.prettifyError(result.error)}`);
-  }
-  return result.data;
+  return readJsonConfig(path, SettingsSchema);
 }
 
 /** 写入单个配置项；文件含 API Key，权限设为仅所有者可读写 */

@@ -53,6 +53,7 @@ CLI (src/index.ts → src/commands/review.ts)
 
 - `src/glob.ts` — glob 转正则（`*`、`**`、`{a,b}`），文件过滤与规则匹配共用
 - `src/project-config.ts` — 读取并校验 `.diff-sense/rules.json`（`exclude` + `rules`）
+- `src/json-config.ts` — JSON 配置文件的读取与 zod 校验（项目配置与用户配置 `~/.diff-sense/config.json` 共用）
 - `src/xml.ts` — 提示词 XML 属性值转义（`<file path>`、`<rules for>` 共用）
 
 ### AI SDK 用法

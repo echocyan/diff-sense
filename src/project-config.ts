@@ -1,7 +1,7 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 import type { Rule } from "./types";
+import { readJsonConfig } from "./json-config";
 
 // 项目配置文件相对仓库根目录的路径
 const CONFIG_PATH = ".diff-sense/rules.json";
@@ -22,24 +22,5 @@ export interface ProjectConfig {
 
 /** 读取项目配置，文件不存在时返回空配置；JSON 或结构无效时抛错 */
 export async function loadProjectConfig(cwd: string): Promise<ProjectConfig> {
-  let raw: string;
-  try {
-    raw = await readFile(join(cwd, CONFIG_PATH), "utf-8");
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") return ProjectConfigSchema.parse({});
-    throw err;
-  }
-
-  let json: unknown;
-  try {
-    json = JSON.parse(raw);
-  } catch (err) {
-    throw new Error(`${CONFIG_PATH} 不是合法的 JSON：${(err as Error).message}`);
-  }
-
-  const result = ProjectConfigSchema.safeParse(json);
-  if (!result.success) {
-    throw new Error(`${CONFIG_PATH} 格式无效：\n${z.prettifyError(result.error)}`);
-  }
-  return result.data;
+  return readJsonConfig(join(cwd, CONFIG_PATH), ProjectConfigSchema, CONFIG_PATH);
 }
