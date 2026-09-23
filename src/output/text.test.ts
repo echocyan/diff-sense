@@ -19,20 +19,32 @@ function finding(overrides: Partial<Finding> = {}): Finding {
 
 describe("formatText", () => {
   it("已锚定发现展示 path:line", () => {
-    const out = plain(formatText({ findings: [finding()], totalTokens: 0, durationMs: 0 }));
+    const out = plain(
+      formatText({ findings: [finding()], entries: [], totalTokens: 0, durationMs: 0 }),
+    );
     expect(out).toContain("src/foo.ts:42");
   });
 
   it("多行发现展示起止行范围", () => {
     const out = plain(
-      formatText({ findings: [finding({ endLine: 45 })], totalTokens: 0, durationMs: 0 }),
+      formatText({
+        findings: [finding({ endLine: 45 })],
+        entries: [],
+        totalTokens: 0,
+        durationMs: 0,
+      }),
     );
     expect(out).toContain("src/foo.ts:42-45");
   });
 
   it("未锚定发现单独标记，不展示行号", () => {
     const out = plain(
-      formatText({ findings: [finding({ line: 0, endLine: 0 })], totalTokens: 0, durationMs: 0 }),
+      formatText({
+        findings: [finding({ line: 0, endLine: 0 })],
+        entries: [],
+        totalTokens: 0,
+        durationMs: 0,
+      }),
     );
     expect(out).toContain("未锚定");
     expect(out).not.toContain("src/foo.ts:0");

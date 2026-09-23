@@ -163,6 +163,7 @@ Matching only considers files under review. `path` is normalised (leading `./` s
 
 - **Text**: human-readable format with severity badges, file paths, line numbers, finding content, and suggested fixes. Grouped by file.
 - **JSON**: structured array of finding objects with fields (in this order): `path`, `line`, `endLine`, `severity`, `category`, `content`, `existingCode`, `suggestionCode`. Every field is always present; `suggestionCode` is `null` when there is no suggested fix. Suitable for machine consumption.
+- **GitHub**: `{ review, summary }` for the GitHub Action. `review` is the Pull Request Review API request body (`event: "COMMENT"`, one comment per finding whose whole range lies inside a single hunk's new side), or `null` when there are none; `summary` is the Markdown for a PR conversation comment listing every other finding (unanchored, outside the hunks, or spanning hunks), or `null`. The Review API rejects the whole request if any comment falls outside the diff, so this split is decided against the reviewed diff in the deterministic layer.
 
 ### GitHub Action (Composite Action)
 

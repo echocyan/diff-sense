@@ -14,7 +14,7 @@ const finding: Finding = {
 
 describe("formatJson", () => {
   it("输出可解析的发现数组，字段齐全且顺序固定，缺省建议为 null", () => {
-    const out = formatJson({ findings: [finding], totalTokens: 10, durationMs: 5 });
+    const out = formatJson({ findings: [finding], entries: [], totalTokens: 10, durationMs: 5 });
     const parsed = JSON.parse(out);
     expect(parsed).toEqual([
       {
@@ -41,6 +41,8 @@ describe("formatJson", () => {
   });
 
   it("无发现时输出空数组", () => {
-    expect(JSON.parse(formatJson({ findings: [], totalTokens: 0, durationMs: 0 }))).toEqual([]);
+    expect(
+      JSON.parse(formatJson({ findings: [], entries: [], totalTokens: 0, durationMs: 0 })),
+    ).toEqual([]);
   });
 });

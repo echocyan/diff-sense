@@ -49,13 +49,13 @@ export async function review(options: ReviewOptions): Promise<ReviewResult> {
 
   const rawEntries = await getDiff(diffMode, cwd);
   if (rawEntries.length === 0) {
-    return { findings: [], totalTokens: 0, durationMs: 0 };
+    return { findings: [], entries: [], totalTokens: 0, durationMs: 0 };
   }
 
   const filterOpts: FilterOptions = { excludePatterns, cwd };
   const entries = await filterFiles(rawEntries, filterOpts);
   if (entries.length === 0) {
-    return { findings: [], totalTokens: 0, durationMs: 0 };
+    return { findings: [], entries, totalTokens: 0, durationMs: 0 };
   }
 
   const start = Date.now();
@@ -92,6 +92,7 @@ export async function review(options: ReviewOptions): Promise<ReviewResult> {
 
   return {
     findings: results.flatMap((r) => r.findings),
+    entries,
     totalTokens: results.reduce((sum, r) => sum + r.totalTokens, grouping.totalTokens),
     durationMs: Date.now() - start,
   };

@@ -4,8 +4,16 @@ import { resolveModel } from "../config";
 import { DEFAULT_CONCURRENCY, review } from "../review";
 import { formatText } from "../output/text";
 import { formatJson } from "../output/json";
+import { formatGithub } from "../output/github";
 import type { DiffMode } from "../diff";
-import { OUTPUT_FORMATS, type OutputFormat } from "../types";
+import { OUTPUT_FORMATS, type OutputFormat, type ReviewResult } from "../types";
+
+/** 各输出格式对应的格式化器 */
+const FORMATTERS: Record<OutputFormat, (result: ReviewResult) => string> = {
+  text: formatText,
+  json: formatJson,
+  github: formatGithub,
+};
 
 /** review 子命令的 CLI 选项 */
 interface ReviewCliOptions {
@@ -52,7 +60,7 @@ export function registerReviewCommand(program: Command) {
         });
 
         s.stop("审查完成");
-        console.log(opts.format === "json" ? formatJson(result) : formatText(result));
+        console.log(FORMATTERS[opts.format](result));
       } catch (err) {
         // spinner 未启动（如参数校验失败）时 stop 不输出任何内容
         s.stop("审查失败");

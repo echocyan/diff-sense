@@ -75,7 +75,7 @@ _Avoid_: Reviewer, bot
 ### 集成 (Integration)
 
 **进度 (Progress)**:
-审查过程中写到 stderr 的状态提示（spinner：开始 → 已完成 k/n 组，共 N 步 → 完成 / 失败），始终显示，不可关闭。审查结果只写 stdout，因此 `--format json` 的输出可直接交给其他程序解析。
+审查过程中写到 stderr 的状态提示（spinner：开始 → 已完成 k/n 组，共 N 步 → 完成 / 失败），始终显示，不可关闭。审查结果只写 stdout，因此 `--format json` / `--format github` 的输出可直接交给其他程序解析。
 _Avoid_: Audience（已移除的 `--audience` 参数）
 
 **Skill**:

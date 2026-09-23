@@ -39,7 +39,7 @@ CLI (src/index.ts → src/commands/review.ts)
      │                全文件扫描经 readNewFile() (src/diff.ts) 读取
      ├── prompts.ts   分组提示词 + 审查提示词（组外文件列入 <other_changed_files>）
      └── tools.ts     code_comment / file_read / code_search / task_done
- → formatText() / formatJson() (src/output/) ← --format text|json；进度（spinner）始终显示，写 stderr
+ → formatText() / formatJson() / formatGithub() (src/output/) ← --format text|json|github；进度（spinner）始终显示，写 stderr
 ```
 
 ### 核心类型 (`src/types.ts`)
@@ -47,7 +47,7 @@ CLI (src/index.ts → src/commands/review.ts)
 - `DiffEntry` — 一个文件的 diff 元数据
 - `Location` — 代码位置（path + line/endLine，line=0 表示未锚定）
 - `Finding` — 一条锚定到代码位置的审查发现（继承 `Location`）
-- `ReviewResult` — 审查结果（findings + token 用量 + 耗时；token 含分组调用）
+- `ReviewResult` — 审查结果（findings + 送审 diff 条目 + token 用量 + 耗时；token 含分组调用）
 - `FileGroup` — 一个语义分组（label + 组内 diff 条目）
 - `Rule` — 一条审查规则（glob 模式 + 注入 Review Checklist 的规则文本）
 

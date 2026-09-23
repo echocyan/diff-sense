@@ -2,7 +2,7 @@
 export type Severity = "high" | "medium" | "low";
 
 /** 输出格式 */
-export const OUTPUT_FORMATS = ["text", "json"] as const;
+export const OUTPUT_FORMATS = ["text", "json", "github"] as const;
 export type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 
 /** 审查发现的分类 */
@@ -50,6 +50,8 @@ export interface DiffEntry {
 export interface ReviewResult {
   /** 所有审查发现 */
   findings: Finding[];
+  /** 本次送审的 diff 条目（过滤后）；GitHub 输出据此判断发现能否作为行内评论 */
+  entries: DiffEntry[];
   /** LLM 总 token 消耗 */
   totalTokens: number;
   /** 审查耗时（毫秒） */
