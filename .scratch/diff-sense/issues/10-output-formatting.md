@@ -4,9 +4,9 @@
 
 **Blocked by:** 05 (最小审查流水线)
 
-**Status:** ready-for-agent
+**Status:** in-progress
 
-- [ ] JSON 格式化器：输出符合 spec 定义的 JSON schema
+- [x] JSON 格式化器：输出符合 spec 定义的 JSON schema
 - [ ] `--format text|json` CLI 标志，默认 text
 - [ ] `--audience human|agent` CLI 标志，默认 human
 - [ ] Agent 模式下静默生命周期回调（不输出进度信息）

@@ -162,7 +162,7 @@ Matching only considers files under review. `path` is normalised (leading `./` s
 ### Output Formats
 
 - **Text**: human-readable format with severity badges, file paths, line numbers, finding content, and suggested fixes. Grouped by file.
-- **JSON**: structured array of finding objects with fields: `path`, `line`, `endLine`, `severity`, `category`, `content`, `existingCode`, `suggestionCode`. Suitable for machine consumption.
+- **JSON**: structured array of finding objects with fields (in this order): `path`, `line`, `endLine`, `severity`, `category`, `content`, `existingCode`, `suggestionCode`. Every field is always present; `suggestionCode` is `null` when there is no suggested fix. Suitable for machine consumption.
 
 ### GitHub Action (Composite Action)
 
