@@ -13,3 +13,7 @@
 - [ ] 行内 PR 评论：锚定发现通过 Pull Request Review API 发布到精确代码行
 - [ ] 摘要评论：未锚定发现聚合为 Markdown 列表，发布为 PR 普通评论
 - [ ] 使用 `github.token` 鉴权，API key 通过 secrets 传入
+
+## Comments
+
+- 工单 10（2026-09-23）：`--format json` 只输出发现数组，不含 token 用量与耗时；若 Action 需要在摘要评论中报告成本，需扩展输出（如另加字段或 stderr 统计）。

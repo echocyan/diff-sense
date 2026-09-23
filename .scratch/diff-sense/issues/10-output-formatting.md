@@ -4,7 +4,7 @@
 
 **Blocked by:** 05 (最小审查流水线)
 
-**Status:** in-progress
+**Status:** done
 
 - [x] JSON 格式化器：输出符合 spec 定义的 JSON schema
 - [x] `--format text|json` CLI 标志，默认 text
@@ -18,3 +18,6 @@
 
 - 审查修复（2026-09-23）：`--background` 已在 ticket 05 中提前实现（`src/commands/review.ts`、`src/agent/prompts.ts` 中 `<user_task>` 内的 `### Requirement Background` 区域），本工单无需重复实现。
 - 工单 08（2026-09-23）：Text 输出已展示 `path:line` 并标记未锚定发现（`src/output/text.ts`、`src/output/text.test.ts`）；多行范围展示留给本工单。
+- 实现记录（2026-09-23）：测试接缝为 `formatJson` 与 `formatText`；`--format` / `--audience` 标志经构建后在临时仓库中手动验证（stdout 仅含结果、agent 受众 stderr 为空、非法取值被拒绝）。进度（spinner）改写 stderr，文本结果前不再输出空行（避免污染 stdout）。
+- 审查修复（2026-09-23）：新增 `OutputFormat` / `Audience` 类型，CLI choices 由同一常量生成；CONTEXT.md 明确受众只控制进度显示，与 `--format` 相互独立。
+- 遗留（2026-09-23）：JSON 输出不含 token 用量与耗时（spec 定义为发现数组）；若 GitHub Action 需报告成本，在工单 13 中处理。
