@@ -81,17 +81,18 @@ GitHub 的 Pull Request Review API 有一个限制：行内评论只能落在 PR
 ```json
 {
   "review": { "event": "COMMENT", "body": "diff-sense 审查：2 条行内评论", "comments": [ ... ] },
-  "summary": "## diff-sense 审查摘要\n\n以下 1 条发现无法定位到本次 diff 的代码行…"
+  "summary": "## diff-sense 审查摘要\n\n以下 1 条发现无法定位到本次 diff 的代码行…",
+  "fallback": "## diff-sense 审查发现\n\nGitHub 未接受行内评论，以下 2 条发现改为在此列出…"
 }
 ```
 
-没有对应发现时，`review` 或 `summary` 为 `null`。
+`fallback` 是 Review 被拒绝时改发的普通评论，列出全部行内评论的发现，与 `review` 同时为 `null` 或非 `null`。没有对应发现时，各字段为 `null`。评论的 Markdown 全部由 CLI 生成，Action 只负责发布。
 
 发布顺序与容错：
 
 1. **先发摘要评论**，保证即使后面的 Review 失败，摘要里的发现也已经发出。
 2. **再发 Review**，`commit_id` 固定为被审查的提交，审查期间有新推送时，评论仍落在正确的行上。
-3. **Review 被拒绝时回退**：本地 diff 与 GitHub 的 PR diff 可能不一致，比如重命名检测阈值不同，或 GitHub 折叠了大文件。这时 Action 输出警告，并把这些行内评论改为一条普通评论发布，不中止步骤，也不丢失发现。
+3. **Review 被拒绝时回退**：本地 diff 与 GitHub 的 PR diff 可能不一致，比如重命名检测阈值不同，或 GitHub 折叠了大文件。这时 Action 输出警告，改为发布 `fallback` 普通评论，不中止步骤，也不丢失发现。
 
 ### 限制
 

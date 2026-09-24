@@ -20,6 +20,8 @@ export interface GithubReview {
   review: { event: "COMMENT"; body: string; comments: GithubReviewComment[] } | null;
   /** 无法作为行内评论的发现，聚合为一条 PR 普通评论的 Markdown；没有时为 null */
   summary: string | null;
+  /** Review 被拒绝时改为发布的 PR 普通评论（Markdown），列出全部行内评论的发现；review 为 null 时为 null */
+  fallback: string | null;
 }
 
 /**
@@ -49,6 +51,7 @@ export function formatGithub(result: ReviewResult): string {
           }
         : null,
     summary: rest.length > 0 ? formatSummary(rest) : null,
+    fallback: inline.length > 0 ? formatFallback(inline) : null,
   };
   return JSON.stringify(output, null, 2);
 }
@@ -82,20 +85,36 @@ function toComment(f: Finding): GithubReviewComment {
   return { path: f.path, line: f.line, side: "RIGHT", body };
 }
 
-/** 摘要评论：说明原因后逐条列出发现，位置无法定位到行时只写路径 */
+/** 摘要评论：说明原因后逐条列出发现 */
 function formatSummary(findings: Finding[]): string {
-  const items = findings.map((f) => {
-    const location = f.line > 0 ? `${f.path}:${lineRange(f)}` : f.path;
-    const detail = [f.content, ...suggestion(f)].map(indent).join("\n");
-    return `- ${heading(f)} · ${inlineCode(location)}\n${detail}`;
-  });
   return [
     "## diff-sense 审查摘要",
     "",
     `以下 ${findings.length} 条发现无法定位到本次 diff 的代码行，未作为行内评论发布：`,
     "",
-    ...items,
+    ...findings.map(listItem),
   ].join("\n");
+}
+
+/**
+ * 回退评论：本地 diff 与 GitHub 的 PR diff 不一致（如重命名检测、大文件折叠）时 Review API 会拒绝整个请求，
+ * Action 改为发布此评论，行内评论的发现不会丢失
+ */
+function formatFallback(findings: Finding[]): string {
+  return [
+    "## diff-sense 审查发现",
+    "",
+    `GitHub 未接受行内评论，以下 ${findings.length} 条发现改为在此列出：`,
+    "",
+    ...findings.map(listItem),
+  ].join("\n");
+}
+
+/** 一条发现的列表项：严重程度、分类与位置，续行为内容与建议代码；位置无法定位到行时只写路径 */
+function listItem(f: Finding): string {
+  const location = f.line > 0 ? `${f.path}:${lineRange(f)}` : f.path;
+  const detail = [f.content, ...suggestion(f)].map(indent).join("\n");
+  return `- ${heading(f)} · ${inlineCode(location)}\n${detail}`;
 }
 
 /** 严重程度与分类，如 `**HIGH** · bug` */

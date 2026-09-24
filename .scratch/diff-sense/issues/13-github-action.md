@@ -27,3 +27,4 @@
   - 摘要评论未报告 token 用量与耗时（见上方工单 10 的评论）。
 - 审查修复（2026-09-23，两轴审查）：先发摘要评论再发 Review，Review 被拒绝（本地 diff 与 GitHub 的 PR diff 不一致）时发出警告并把行内评论改为普通评论发布，不再连带丢失全部发现；Review 带上 `body`（COMMENT 事件文档要求）；`pull_request` 事件中的 fork PR 在前置步骤提示并跳过，不再白白运行审查；`to_ref` 无法解析与 merge-base 失败分别报错；摘要中含反引号的路径不再截断行内代码；`text` 与 `github` 输出共用 `lineRange`；spec 中 `--format` 与摘要评论的描述与实现同步。
 - 审查未采纳（2026-09-23，两轴审查）：用户故事 29 的「审查力度」仅以 `concurrency` 体现，与工单的输入列表一致；回退评论中的路径未做反引号转义（仅在路径含反引号且 Review 被拒绝时出现）。
+- 架构检查修复（2026-09-24）：回退评论原由 action.yml 中的 jq 从行内评论重新拼接 Markdown，路径未做反引号转义，评论格式分散在两处。改为 `--format github` 输出 `fallback` 字段，由 src/output/github.ts 与摘要评论共用列表格式生成；Action 只选择发布哪一份。上文「审查未采纳」中的回退路径转义问题随之解决。

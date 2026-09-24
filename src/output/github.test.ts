@@ -38,8 +38,8 @@ function finding(overrides: Partial<Finding> = {}): Finding {
   };
 }
 
-function format(findings: Finding[]): GithubReview {
-  return JSON.parse(formatGithub({ findings, entries: [entry], totalTokens: 0, durationMs: 0 }));
+function format(findings: Finding[], entries = [entry]): GithubReview {
+  return JSON.parse(formatGithub({ findings, entries, totalTokens: 0, durationMs: 0 }));
 }
 
 describe("formatGithub", () => {
@@ -96,8 +96,30 @@ describe("formatGithub", () => {
     expect(summary).toContain("``a`b.ts``");
   });
 
-  it("没有发现时 review 与 summary 均为 null", () => {
-    expect(format([])).toEqual({ review: null, summary: null });
+  it("没有发现时 review、summary 与 fallback 均为 null", () => {
+    expect(format([])).toEqual({ review: null, summary: null, fallback: null });
+  });
+
+  it("为行内评论准备 Review 被拒绝时的回退评论，逐条列出位置、内容与建议代码", () => {
+    const { fallback } = format([
+      finding({ line: 10, endLine: 13, content: "多行问题", suggestionCode: "const b = 2;" }),
+      finding({ severity: "low", content: "单行问题" }),
+    ]);
+    expect(fallback?.match(/^- /gm)).toHaveLength(2);
+    expect(fallback).toContain("`src/foo.ts:10-13`");
+    expect(fallback).toContain("`src/foo.ts:11`");
+    expect(fallback).toContain("多行问题");
+    expect(fallback).toContain("单行问题");
+    expect(fallback).toContain("```ts\n  const b = 2;\n  ```");
+  });
+
+  it("回退评论中含反引号的路径不被截断", () => {
+    const { fallback } = format([finding({ path: "a`b.ts" })], [{ ...entry, path: "a`b.ts" }]);
+    expect(fallback).toContain("``a`b.ts:11``");
+  });
+
+  it("没有行内评论时不生成回退评论", () => {
+    expect(format([finding({ line: 0, endLine: 0 })]).fallback).toBeNull();
   });
 
   it("建议代码自身含代码围栏时使用更长的围栏", () => {

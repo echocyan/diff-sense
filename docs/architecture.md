@@ -110,7 +110,7 @@ LLM 给出的行号不可靠，所以 `code_comment` 只要求模型提供 diff 
 | --- | --- | --- |
 | `text` | 终端阅读 | 按文件分组的彩色输出，末尾汇总条数、token 与耗时 |
 | `json` | 机器消费（Skill 等） | 发现数组，字段与顺序固定，无修复建议时 `suggestionCode` 为 `null` |
-| `github` | GitHub Action | `{ review, summary }`，见 [集成文档](integrations.md#评论如何生成) |
+| `github` | GitHub Action | `{ review, summary, fallback }`，见 [集成文档](integrations.md#评论如何生成) |
 
 审查结果只写 stdout，进度（spinner：已完成 k/n 组，共 N 步）只写 stderr，所以 `--format json | jq ...` 之类的管道可以直接使用。
 

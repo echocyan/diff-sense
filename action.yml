@@ -142,14 +142,9 @@ runs:
             echo "已发布 $(jq '.review.comments | length' "$result") 条行内评论"
           else
             # 本地 diff 与 GitHub 的 PR diff 不一致（如重命名检测、大文件折叠）时 Review API 会拒绝整个请求，
-            # 此时改为普通评论列出这些发现，不让它们丢失
+            # 此时改为发布 CLI 预先生成的回退评论，不让这些发现丢失
             echo "::warning::行内评论发布失败，改为以普通评论发布"
-            jq -r '
-              "## diff-sense 审查发现\n\nGitHub 未接受行内评论，以下发现改为在此列出：\n\n"
-              + ([.review.comments[]
-                  | "### `\(.path):\(if .start_line then "\(.start_line)-" else "" end)\(.line)`\n\n\(.body)"]
-                 | join("\n\n"))
-            ' "$result" | gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file -
+            jq -r '.fallback' "$result" | gh pr comment "$PR_NUMBER" --repo "$REPO" --body-file -
           fi
         fi
         if jq -e '.review == null and .summary == null' "$result" > /dev/null; then
