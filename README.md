@@ -142,6 +142,13 @@ jobs:
 npx skills add echocyan/diff-sense
 ```
 
+## 文档
+
+- [架构](docs/architecture.md)：审查流水线、分组、锚定与模块划分
+- [配置](docs/configuration.md)：LLM 配置、项目规则、内置规则与文件过滤
+- [集成](docs/integrations.md)：GitHub Action 与 Skill 的细节
+- [开发与发布](docs/development.md)：开发约定与 npm 发布流程
+
 ## 开发
 
 ```bash
