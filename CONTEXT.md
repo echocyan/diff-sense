@@ -1,87 +1,100 @@
 # diff-sense
 
-轻量级 AI 驱动的代码审查 CLI 工具。通过确定性流水线处理文件筛选和行号锚定，通过 LLM Agent 循环完成实际审查。
+轻量级 AI 驱动的代码审查 CLI 工具。由确定性流水线负责文件筛选和行号锚定，由 LLM Agent 循环完成实际审查。
+
+## Rules
+
+- **Be opinionated.** When multiple words exist for the same concept, pick the best one and list the others under `_Avoid_`.
+- **Keep definitions tight.** One or two sentences max. Define what it IS, not what it does.
+- **Only include terms specific to this project's context.** General programming concepts (timeouts, error types, utility patterns) don't belong even if the project uses them extensively. Before adding a term, ask: is this a concept unique to this context, or a general programming concept? Only the former belongs.
+- **Group terms under subheadings** when natural clusters emerge. If all terms belong to a single cohesive area, a flat list is fine.
 
 ## Language
 
 ### 审查流水线 (Review Pipeline)
 
 **审查 (Review)**:
-对一组代码变更的一次完整审查调用，产出零个或多个发现 (Finding)。
+对一个差异的一次完整审查调用，产出零个或多个发现 (Finding)。
 _Avoid_: Audit, scan, check
 
 **差异 (Diff)**:
-待审查的代码变更集，从 git 获取。有三种模式：工作区 (workspace)、单次提交 (commit)、范围 (range)。
+从 git 获取的、待审查的代码变更集。
 _Avoid_: Changeset, patch
 
 **差异模式 (Diff Mode)**:
-决定如何从 git 获取差异。三选一：workspace（未提交的变更：staged + unstaged + 未跟踪文件）、commit（单个 SHA）、range（两个 ref 之间）。
+决定从 git 取哪部分变更：workspace（未提交的变更，含未跟踪文件）、commit（单个提交）或 range（两个 ref 之间）。
 
 **发现 (Finding)**:
-一条锚定到代码位置的审查观察，具有严重程度、分类、描述内容，以及可选的修复建议。
+一条锚定到代码位置的审查观察，带有严重程度、分类、描述和可选的修复建议。
 _Avoid_: Comment, issue, warning, violation
 
 **严重程度 (Severity)**:
-发现的影响级别。三选一：high、medium、low。
+发现的影响级别：high、medium 或 low。
 
 **分类 (Category)**:
-发现的缺陷类别。六选一：bug、security、performance、maintainability、style、other。
+发现的缺陷类别：bug、security、performance、maintainability、style 或 other。
 
 ### 文件处理 (File Processing)
 
 **文件过滤器 (File Filter)**:
-四道门 (Gate) 组成的流水线，决定差异中哪些文件进入审查。依次为：二进制排除 → 敏感路径排除 → 用户排除 → 扩展名白名单。扩展名白名单放行源代码与配置文件（json / yaml / toml 等），排除文档（md / txt）及 lockfile、`*.min.js` 等生成产物。
+由四道门组成的流水线，决定差异中哪些文件进入审查。
 _Avoid_: File selector, file picker
 
 **门 (Gate)**:
-文件过滤器的一个阶段。每道门要么放行、要么排除一个文件。
+文件过滤器的一个阶段，对每个文件给出放行或排除：二进制、敏感路径、用户排除、扩展名白名单。
 
 **前置过滤 (Pre-filter)**:
-进入四道门之前排除已删除文件。已删除文件没有变更后的代码，发现无法锚定到行号，因此不送审；不计入四道门。
+在四道门之前排除已删除文件的步骤；已删除文件没有可锚定的代码，不计入门。
 
 **规则 (Rule)**:
-按语言/文件类型定制的审查清单，注入到审查提示词中，引导 Agent 关注该语言的典型缺陷模式。通过 glob 模式匹配文件（大小写不敏感），先匹配者优先；项目规则（`.diff-sense/rules.json`）排在内置规则之前，无命中时使用默认回退规则。规则文本注入审查提示词的 "Review Checklist" 区域（沿用 OCR 模板的区域名，代码中对应 `UserTask.checklist`）。glob 支持 `*`、`**`、`{a,b}`，不支持 `?` 与 `[abc]`。
+按语言或文件类型定制的审查清单，通过 glob 模式匹配文件并注入审查提示词。项目规则优先于内置规则，都未命中时使用默认规则。
 _Avoid_: Policy, guideline, check
 
 ### 分组 (Grouping)
 
 **语义分组 (Semantic Group)**:
-一组相关文件的聚类（如 handler + service + test），分配给同一个 Agent 一起审查。由分组提示词生成，仅基于文件元数据（路径、状态、增删行数），不传入差异内容。每组至多 10 个文件（超出时按上限拆分）；文件数少于 4 时不分组，全部文件归入一组。多个分组由各自的审查 Agent 并发审查，并发数由 `--concurrency` 控制（默认 4）。
+分配给同一个审查 Agent 一起审查的一组相关文件（如 handler + service + test）。
 _Avoid_: Batch, chunk, partition
 
 **分组提示词 (Grouping Prompt)**:
-将文件聚类为语义分组的 LLM 调用。输入是文件元数据列表，输出是 JSON 数组 `[{label, files}]`（files 为文件索引）。结构不符的组以及非整数、重复与越界索引被丢弃，未分配的文件各成一组；输出中找不到分组数组或调用失败时，退化为每个文件单独成组。
+仅依据文件元数据（路径、状态、增删行数）把文件聚类为语义分组的 LLM 调用。
 
 ### Agent
 
 **审查 Agent (Review Agent)**:
-一个 ToolLoopAgent 实例，负责审查一个语义分组。它通过工具调用循环读取文件、搜索代码、发布发现，最后发出完成信号。
+负责审查一个语义分组的 LLM 工具调用循环。
 _Avoid_: Reviewer, bot
 
 **工具 (Tool)**:
-审查 Agent 在循环中可调用的结构化函数。四个工具：code_comment（发布发现）、file_read（读取文件内容）、code_search（搜索代码库）、task_done（完成信号）。
+审查 Agent 在循环中可调用的结构化函数：code_comment、file_read、code_search、task_done。
 
 **审查提示词 (Review Prompt)**:
-驱动审查 Agent 工具调用循环的 system + user 消息对。包含 XML 标签包裹的差异内容、组外变更文件列表、匹配的规则，以及可选的业务上下文。
+驱动审查 Agent 的消息，包含本组差异、组外变更文件、匹配的规则和可选的业务上下文。
+
+**业务上下文 (Background)**:
+用户对改动目的与有意取舍的简短说明，帮助审查 Agent 减少误报。
 
 ### 锚定 (Anchoring)
 
 **锚定 (Anchor)**:
-将发现的 `existing_code` 代码片段映射到被审查文件的精确行号（line / endLine）。三步流程：hunk 新侧（上下文行 + 新增行）匹配 → 变更后全文件扫描 → 回退到 line=0；比较时忽略空白。未指定文件路径时，以片段命中的文件为准。
+把发现引用的代码片段映射到被审查文件中精确行号的确定性过程，不采信 LLM 给出的行号。
 
 **未锚定发现 (Unanchored Finding)**:
-锚定失败（line=0）的发现。在 GitHub Action 输出中，未锚定发现汇入摘要评论，而非行内评论。
+锚定失败、无法定位到行的发现；它被保留，而不是丢弃。
 
 ### 集成 (Integration)
 
 **进度 (Progress)**:
-审查过程中写到 stderr 的状态提示（spinner：开始 → 已完成 k/n 组，共 N 步 → 完成 / 失败），始终显示，不可关闭。审查结果只写 stdout，因此 `--format json` / `--format github` 的输出可直接交给其他程序解析。
-_Avoid_: Audience（已移除的 `--audience` 参数）
+审查过程中写到 stderr 的状态提示，与写到 stdout 的审查结果分离。
+_Avoid_: Audience
 
 **Skill**:
-源文件为仓库中的 `skills/diff-sense/SKILL.md`（经 skills.sh 分发，使用者安装到 `.agents/`、`.claude/` 等目录），指导其他 AI Agent 如何调用 diff-sense 并解读输出，以 `diff-sense config check` 判断是否已配置。返回按严重程度分组的 Markdown 审查摘要。
+指导其他 AI Agent 调用 diff-sense 并把结果整理为按严重程度分组的审查摘要的说明文件。
 _Avoid_: Plugin, extension, integration
 
 **Action**:
-GitHub Actions Composite Action（`action.yml`），在 CI 中以 `--format github` 运行 diff-sense，将落在 diff hunk 内的发现发布为 PR 行内评论，其余发现汇入摘要评论。
+在 PR 上运行 diff-sense 的 GitHub Composite Action，把发现发布为行内评论，无法落在 diff 行内的汇入摘要评论。
 _Avoid_: Workflow, pipeline
+
+**摘要评论 (Summary Comment)**:
+Action 发布的一条 PR 普通评论，汇总所有无法作为行内评论发布的发现。
