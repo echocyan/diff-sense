@@ -94,6 +94,23 @@ describe("配置文件读写", () => {
     );
     await expect(readFile(path, "utf-8")).rejects.toThrow();
   });
+
+  it("set provider 切换到其他提供商时清空 model 与 apiKey，密钥不会被新提供商沿用", async () => {
+    await writeConfigFile(
+      { provider: "anthropic", model: "claude-sonnet-5", apiKey: "sk-ant" },
+      path,
+    );
+    await setConfigValue("provider", "openai", path);
+    expect(await readConfigFile(path)).toEqual({ provider: "openai" });
+    await expect(checkConfig({}, path)).rejects.toThrow("缺少 model");
+  });
+
+  it("set provider 与当前提供商相同时保留 model 与 apiKey", async () => {
+    const settings = { provider: "anthropic", model: "claude-sonnet-5", apiKey: "sk-ant" } as const;
+    await writeConfigFile(settings, path);
+    await setConfigValue("provider", "anthropic", path);
+    expect(await readConfigFile(path)).toEqual(settings);
+  });
 });
 
 describe("resolveSettings", () => {

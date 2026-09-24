@@ -65,9 +65,22 @@ export async function setConfigValue(key: string, value: string, path = CONFIG_F
   const v = value.trim();
   if (!v) throw new Error(`${k} 不能为空`);
   const settings = await readConfigFile(path);
-  if (k === "provider") settings.provider = assertOneOf(v, PROVIDERS, `不支持的 provider：${v}`);
-  else settings[k] = v;
-  await writeConfigFile(settings, path);
+  const next =
+    k === "provider"
+      ? withProvider(settings, assertOneOf(v, PROVIDERS, `不支持的 provider：${v}`))
+      : { ...settings, [k]: v };
+  await writeConfigFile(next, path);
+}
+
+/**
+ * 切换提供商后的配置
+ *
+ * model 与 apiKey 属于原提供商：提供商改变时一并清空，避免把密钥发给新的服务，
+ * 也避免留下与提供商不匹配的模型 ID；提供商未变时原样保留
+ */
+export function withProvider(settings: Settings, provider: Provider): Settings {
+  if (provider === settings.provider) return settings;
+  return { provider };
 }
 
 /** 读取单个配置项，未设置时返回 undefined */

@@ -57,7 +57,7 @@ diff-sense config check           # 检查合并后的生效配置是否完整
   apiKey: 已设置（来源：环境变量 ANTHROPIC_API_KEY）
   ```
 
-- 向导中切换提供商时，已保存的 API Key 不会沿用到新的提供商。
+- 切换提供商时（向导或 `config set provider`），原提供商的 model 与 API Key 一并清空，不会沿用到新的提供商。
 - `config set apiKey <key>` 会让密钥留在 shell 历史中，建议改用向导或环境变量。
 
 ## 项目配置

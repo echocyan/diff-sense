@@ -24,4 +24,5 @@
   - set 去除首尾空白并拒绝空值。
   - 抽取 `readJsonConfig` 与项目配置共用读取逻辑。
 - 遗留（2026-09-23）：`config get apiKey` 明文输出密钥；`config set apiKey <value>` 会让密钥进入 shell 历史与进程列表。可考虑 get 默认打码、set 支持从 stdin 读取；待有需求时处理。
-- 遗留（2026-09-23）：暂无 `config unset`，已保存的 apiKey 只能通过向导切换提供商或手动编辑文件移除。
+- 遗留（2026-09-23）：暂无 `config unset`，已保存的 apiKey 只能通过切换提供商或手动编辑文件移除。
+- 架构检查修复（2026-09-24）：`config set provider` 切换到其他提供商时原先保留旧密钥，resolveSettings 随后把它当作新提供商的密钥发出。改由配置模块的 `withProvider` 统一规则：提供商改变时清空 model 与 apiKey，向导与 set 共用。

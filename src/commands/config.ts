@@ -9,6 +9,7 @@ import {
   providerApiKeyEnvVar,
   readConfigFile,
   setConfigValue,
+  withProvider,
   writeConfigFile,
   type Provider,
 } from "../config";
@@ -77,17 +78,17 @@ async function runWizard() {
   });
   if (isCancel(provider)) return abort();
 
+  // 切换提供商时原提供商的模型与 API Key 不再沿用
+  const base = withProvider(current, provider);
   const model = await text({
     message: "模型 ID",
     placeholder: MODEL_EXAMPLES[provider],
-    // 提供商未变时预填已有模型
-    initialValue: provider === current.provider ? current.model : undefined,
+    initialValue: base.model,
     validate: (v) => (v?.trim() ? undefined : "模型 ID 不能为空"),
   });
   if (isCancel(model)) return abort();
 
-  // 已保存的 apiKey 属于原提供商，切换提供商后不再沿用
-  const savedKey = provider === current.provider ? current.apiKey : undefined;
+  const savedKey = base.apiKey;
   const apiKey = await password({
     message: savedKey
       ? "API Key（留空沿用已保存的值）"
