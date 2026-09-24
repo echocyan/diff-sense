@@ -81,6 +81,15 @@ describe("code_search", () => {
     expect(await run("code_search", { query: "-n" })).toContain("a.ts");
   });
 
+  it("workspace 模式搜索未跟踪的新文件，仍遵守 .gitignore", async () => {
+    await writeFile(join(repo, ".gitignore"), "ignored.ts\n");
+    await writeFile(join(repo, "untracked.ts"), "export const UNTRACKED_PROBE = 1;\n");
+    await writeFile(join(repo, "ignored.ts"), "export const UNTRACKED_PROBE = 2;\n");
+    const out = await run("code_search", { query: "UNTRACKED_PROBE" });
+    expect(out).toContain("untracked.ts:1:");
+    expect(out).not.toContain("ignored.ts");
+  });
+
   it("无法通过选项注入执行命令", async () => {
     const marker = join(root, "pwned");
     await run("code_search", { query: `--open-files-in-pager=touch ${marker}` });

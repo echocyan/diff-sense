@@ -83,7 +83,8 @@ export function createTools(
         try {
           // 用 -e 传入查询，防止以 - 开头的查询被解析为 git 选项（如 --open-files-in-pager）
           const args = ["grep", "-n", "--no-color", "-e", query];
-          if (rev !== undefined) args.push(rev);
+          // 工作区差异包含未跟踪文件，搜索也需覆盖（--untracked 仍遵守 .gitignore）；提交中搜索则指定版本
+          args.push(rev === undefined ? "--untracked" : rev);
           args.push("--");
           if (file_pattern) args.push(file_pattern);
           const { stdout: raw } = await exec("git", args, { cwd, maxBuffer: 1024 * 1024 });

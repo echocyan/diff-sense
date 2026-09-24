@@ -21,3 +21,4 @@
 - 遗留（2026-09-23）：短片段（如 `}`、`return;`）取首个命中位置，多处命中时可能锚错；待实际遇到再处理（可考虑优先新增行或要求片段唯一）。
 - 遗留（2026-09-23）：`readNewFile` 的 workspace 分支与 `file_read` 均按 `cwd` 解析路径，而 diff 路径相对仓库根目录；在子目录中运行时全文件扫描会失败。需统一改为以 `git rev-parse --show-toplevel` 为根，见工单 15。
 - 架构检查修复（2026-09-24）：锚定按差异模式读取被审查的提交，而 file_read 读工作区、code_search 执行不带版本的 git grep，审查历史提交或在 Action 中（检出的是 PR 合并提交）时 Agent 看到的代码与被审查的版本不一致。改由 `newSideRev()`（src/diff.ts）统一决定新侧版本，锚定、file_read 与 code_search 共用。
+- 复查修复（2026-09-24）：workspace 模式的差异包含未跟踪文件，但 code_search 的 git grep 默认只搜索已跟踪文件，新文件中的引用搜不到。workspace 模式改用 `git grep --untracked`（仍遵守 .gitignore）。

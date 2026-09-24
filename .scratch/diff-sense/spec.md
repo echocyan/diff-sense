@@ -123,7 +123,7 @@ Each semantic group is reviewed by a `ToolLoopAgent` instance:
 
 - **`file_read`**: reads file content from the repository. Uses `contextSchema` to receive repo root path. Returns file content string. Reads the same revision as anchoring: the working tree in workspace mode, the reviewed commit (commit mode) or the `to` ref (range mode) otherwise.
 
-- **`code_search`**: searches the codebase via `git grep`. Input: `query` (string), optional `file_pattern` (glob). Returns matching lines with file paths and line numbers. Searches the same revision as `file_read`.
+- **`code_search`**: searches the codebase via `git grep`. Input: `query` (string), optional `file_pattern` (glob). Returns matching lines with file paths and line numbers. Searches the same revision as `file_read`; in workspace mode untracked files are included (respecting `.gitignore`), matching the workspace diff.
 
 - **`task_done`**: signals review completion. No `execute` function — calling it terminates the loop via AI SDK's built-in mechanism. Input schema carries `summary` (string) for logging.
 
