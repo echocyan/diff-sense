@@ -86,9 +86,9 @@ diff-sense review
 | `code_comment` | 发布一条发现，立即锚定行号 | 严重程度与分类为固定枚举 |
 | `file_read` | 读取仓库内文件 | 拒绝仓库外路径（含符号链接），超过 50,000 字符截断 |
 | `code_search` | 用 `git grep` 搜索代码 | 最多返回 50 行 |
+| `task_done` | 完成信号 | 无实现，调用即结束循环 |
 
 `file_read`、`code_search` 与锚定读取同一版本的代码：workspace 模式读工作区，commit 模式读该提交，range 模式读 `to` 端的提交。因此审查历史提交或在 CI 中审查 PR 时，Agent 看到的就是被审查的代码，而不是当前检出的版本。
-| `task_done` | 完成信号 | 无实现，调用即结束循环 |
 
 循环在 Agent 调用 `task_done` 或达到 **30 步**时停止；此前通过 `code_comment` 发布的发现都会保留。
 
