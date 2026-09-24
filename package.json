@@ -1,6 +1,6 @@
 {
   "name": "@echocyan/diff-sense",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "轻量级 AI 驱动的代码审查 CLI 工具",
   "type": "module",
   "bin": {

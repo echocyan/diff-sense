@@ -166,7 +166,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # 计算 merge-base 需要完整历史
-      - uses: echocyan/diff-sense@v0.1.0
+      - uses: echocyan/diff-sense@v0.1.1
         with:
           provider: anthropic
           model: claude-sonnet-5
