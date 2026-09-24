@@ -2,7 +2,8 @@ import { ToolLoopAgent, hasToolCall, isStepCount } from "ai";
 import type { LanguageModel } from "ai";
 import type { DiffEntry, Finding, ReviewResult, Rule } from "../types";
 import { resolveGroupRules } from "../rules/matcher";
-import { anchor, type ReadNewFile } from "../anchor";
+import { anchor } from "../anchor";
+import { readNewFile, type DiffMode } from "../diff";
 import { createTools } from "./tools";
 import { buildSystemPrompt, buildUserPrompt } from "./prompts";
 
@@ -18,8 +19,8 @@ interface RunReviewAgentOptions {
   cwd: string;
   /** 生效的规则列表，按组内文件解析后注入 Review Checklist */
   rules: Rule[];
-  /** 读取变更后的完整文件，用于行号锚定的全文件扫描 */
-  readNewFile: ReadNewFile;
+  /** 差异模式，决定锚定与工具读取哪个版本的代码 */
+  diffMode: DiffMode;
   /** 业务上下文 */
   background?: string;
   /** 每个 Agent 步骤结束时的回调 */
@@ -30,11 +31,11 @@ interface RunReviewAgentOptions {
 export async function runReviewAgent(
   options: RunReviewAgentOptions,
 ): Promise<Pick<ReviewResult, "findings" | "totalTokens">> {
-  const { model, entries, others, cwd, rules, readNewFile, background, onStepEnd } = options;
+  const { model, entries, others, cwd, rules, diffMode, background, onStepEnd } = options;
   // findings 数组由 code_comment 工具的 execute 回调写入，写入前先锚定行号
   const findings: Finding[] = [];
-  const tools = createTools(cwd, findings, (code, path) =>
-    anchor(code, path, entries, readNewFile),
+  const tools = createTools(cwd, diffMode, findings, (code, path) =>
+    anchor(code, path, entries, (p) => readNewFile(diffMode, p, cwd)),
   );
 
   const agent = new ToolLoopAgent({

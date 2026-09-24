@@ -1,9 +1,10 @@
 import { tool, type ToolSet } from "ai";
 import { z } from "zod";
-import { readFile, realpath } from "node:fs/promises";
+import { realpath } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { isAbsolute, relative, resolve, sep } from "node:path";
+import { newSideRev, readNewFile, type DiffMode } from "../diff";
 import type { Finding, Location } from "../types";
 
 const exec = promisify(execFile);
@@ -11,8 +12,19 @@ const exec = promisify(execFile);
 /** 将 existing_code 锚定到文件行号；path 缺省时由实现推断 */
 export type Locate = (existingCode: string, path?: string) => Promise<Location>;
 
-/** 创建审查 Agent 的四个工具：code_comment / file_read / code_search / task_done */
-export function createTools(cwd: string, findings: Finding[], locate: Locate): ToolSet {
+/**
+ * 创建审查 Agent 的四个工具：code_comment / file_read / code_search / task_done
+ *
+ * file_read 与 code_search 按差异模式读取变更后的代码：workspace 读工作区，
+ * commit / range 读被审查的提交，与锚定所用的版本一致
+ */
+export function createTools(
+  cwd: string,
+  mode: DiffMode,
+  findings: Finding[],
+  locate: Locate,
+): ToolSet {
+  const rev = newSideRev(mode);
   return {
     code_comment: tool({
       description: "Report a code review finding",
@@ -46,14 +58,10 @@ export function createTools(cwd: string, findings: Finding[], locate: Locate): T
       }),
       execute: async ({ path: filePath }) => {
         try {
-          // 解析符号链接后再校验，拒绝仓库外路径（../、绝对路径、指向外部的链接）
-          const root = await realpath(cwd);
-          const fullPath = await realpath(resolve(cwd, filePath));
-          const rel = relative(root, fullPath);
-          if (rel.split(sep)[0] === ".." || isAbsolute(rel)) {
-            return `Error: path is outside the repository: ${filePath}`;
-          }
-          const content = await readFile(fullPath, "utf-8");
+          const path = await repoPath(cwd, filePath, rev === undefined);
+          if (path === undefined) return `Error: path is outside the repository: ${filePath}`;
+          const content = await readNewFile(mode, path, cwd);
+          if (content === undefined) return `Error: file not found or unreadable: ${filePath}`;
           // 截断过长文件，防止单文件占满 LLM 上下文窗口
           if (content.length > 50_000) {
             return content.slice(0, 50_000) + "\n... (truncated)";
@@ -75,8 +83,15 @@ export function createTools(cwd: string, findings: Finding[], locate: Locate): T
         try {
           // 用 -e 传入查询，防止以 - 开头的查询被解析为 git 选项（如 --open-files-in-pager）
           const args = ["grep", "-n", "--no-color", "-e", query];
-          if (file_pattern) args.push("--", file_pattern);
-          const { stdout } = await exec("git", args, { cwd, maxBuffer: 1024 * 1024 });
+          if (rev !== undefined) args.push(rev);
+          args.push("--");
+          if (file_pattern) args.push(file_pattern);
+          const { stdout: raw } = await exec("git", args, { cwd, maxBuffer: 1024 * 1024 });
+          // 在提交中搜索时每行以 `<rev>:` 开头，去掉后与工作区搜索的格式一致
+          const stdout =
+            rev === undefined
+              ? raw
+              : raw.replaceAll(new RegExp(`^${escapeRegExp(rev)}:`, "gm"), "");
           const lines = stdout.split("\n").filter(Boolean);
           // 限制搜索结果行数，避免输出过长
           if (lines.length > 50) {
@@ -97,4 +112,26 @@ export function createTools(cwd: string, findings: Finding[], locate: Locate): T
       }),
     }),
   };
+}
+
+/**
+ * 把 Agent 给出的路径解析为相对仓库根目录的路径，位于仓库外时返回 undefined
+ *
+ * 读取工作区时先解析符号链接再校验，拒绝指向仓库外的链接；读取提交时文件不在磁盘上，按路径本身校验
+ */
+async function repoPath(
+  cwd: string,
+  filePath: string,
+  followLinks: boolean,
+): Promise<string | undefined> {
+  const root = followLinks ? await realpath(cwd) : cwd;
+  const full = followLinks ? await realpath(resolve(cwd, filePath)) : resolve(cwd, filePath);
+  const rel = relative(root, full);
+  if (rel.split(sep)[0] === ".." || isAbsolute(rel)) return undefined;
+  return rel.split(sep).join("/");
+}
+
+/** 转义正则元字符 */
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

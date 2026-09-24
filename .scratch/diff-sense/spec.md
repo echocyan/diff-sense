@@ -121,9 +121,9 @@ Each semantic group is reviewed by a `ToolLoopAgent` instance:
   - The tool accepts individual comments (not batched arrays) to keep the schema simple. Multiple findings require multiple tool calls.
   - Has an `execute` function that collects comments into an accumulator.
 
-- **`file_read`**: reads file content from the repository. Uses `contextSchema` to receive repo root path. Returns file content string.
+- **`file_read`**: reads file content from the repository. Uses `contextSchema` to receive repo root path. Returns file content string. Reads the same revision as anchoring: the working tree in workspace mode, the reviewed commit (commit mode) or the `to` ref (range mode) otherwise.
 
-- **`code_search`**: searches the codebase via `git grep`. Input: `query` (string), optional `file_pattern` (glob). Returns matching lines with file paths and line numbers.
+- **`code_search`**: searches the codebase via `git grep`. Input: `query` (string), optional `file_pattern` (glob). Returns matching lines with file paths and line numbers. Searches the same revision as `file_read`.
 
 - **`task_done`**: signals review completion. No `execute` function — calling it terminates the loop via AI SDK's built-in mechanism. Input schema carries `summary` (string) for logging.
 

@@ -64,8 +64,8 @@ export async function readNewFile(
   cwd: string,
 ): Promise<string | undefined> {
   try {
-    if (mode.type === "workspace") return await readFile(join(cwd, path), "utf-8");
-    const rev = mode.type === "commit" ? mode.sha : mode.to;
+    const rev = newSideRev(mode);
+    if (rev === undefined) return await readFile(join(cwd, path), "utf-8");
     const { stdout } = await exec("git", ["show", `${rev}:${path}`], {
       cwd,
       maxBuffer: GIT_MAX_BUFFER,
@@ -73,6 +73,22 @@ export async function readNewFile(
     return stdout;
   } catch {
     return undefined;
+  }
+}
+
+/**
+ * 变更后（新侧）代码所在的提交：commit 为该提交，range 为 to 端；workspace 为工作区，返回 undefined
+ *
+ * 锚定与审查 Agent 的文件读取、代码搜索都以此为准，保证看到的是同一版本的代码
+ */
+export function newSideRev(mode: DiffMode): string | undefined {
+  switch (mode.type) {
+    case "workspace":
+      return undefined;
+    case "commit":
+      return mode.sha;
+    case "range":
+      return mode.to;
   }
 }
 

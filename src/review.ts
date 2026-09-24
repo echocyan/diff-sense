@@ -1,7 +1,7 @@
 import type { LanguageModel } from "ai";
 import pLimit from "p-limit";
 import type { ReviewResult } from "./types";
-import { getDiff, getRepoRoot, readNewFile, type DiffMode } from "./diff";
+import { getDiff, getRepoRoot, type DiffMode } from "./diff";
 import { filterFiles, type FilterOptions } from "./filter";
 import { groupFiles } from "./grouping";
 import { runReviewAgent } from "./agent/loop";
@@ -62,7 +62,6 @@ export async function review(options: ReviewOptions): Promise<ReviewResult> {
   const rules = await loadRules(cwd);
   const grouping = await groupFiles(entries, model);
 
-  const readGroupFile = (path: string) => readNewFile(diffMode, path, cwd);
   const progress: ReviewProgress = { groupsDone: 0, groupsTotal: grouping.groups.length, steps: 0 };
   const reportProgress = () => onProgress?.({ ...progress });
   reportProgress();
@@ -76,7 +75,7 @@ export async function review(options: ReviewOptions): Promise<ReviewResult> {
           others: entries.filter((e) => !group.entries.includes(e)),
           cwd,
           rules,
-          readNewFile: readGroupFile,
+          diffMode,
           background,
           onStepEnd: () => {
             progress.steps++;

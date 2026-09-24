@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { createTools, type Locate } from "./tools";
+import type { DiffMode } from "../diff";
 import type { Finding } from "../types";
 
 const exec = promisify(execFile);
@@ -19,9 +20,14 @@ const unanchored: Locate = async () => ({ path: "unknown", line: 0, endLine: 0 }
 async function run(
   name: string,
   input: Record<string, unknown>,
-  { findings = [] as Finding[], locate = unanchored } = {},
+  {
+    findings = [] as Finding[],
+    locate = unanchored,
+    cwd = repo,
+    mode = { type: "workspace" } as DiffMode,
+  } = {},
 ): Promise<string> {
-  const tools = createTools(repo, findings, locate);
+  const tools = createTools(cwd, mode, findings, locate);
   return tools[name].execute!(input, { toolCallId: "t", messages: [] } as never) as Promise<string>;
 }
 
@@ -79,5 +85,52 @@ describe("code_search", () => {
     const marker = join(root, "pwned");
     await run("code_search", { query: `--open-files-in-pager=touch ${marker}` });
     await expect(access(marker)).rejects.toThrow();
+  });
+});
+
+describe("commit / range 模式读取被审查的版本", () => {
+  let history: string;
+  let sha: string;
+
+  beforeAll(async () => {
+    history = join(root, "history");
+    await mkdir(history);
+    const git = (...args: string[]) => exec("git", args, { cwd: history });
+    await git("init", "-q");
+    await writeFile(join(history, "a.ts"), "export const version = 'reviewed';\n");
+    await git("add", ".");
+    await git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "reviewed");
+    sha = (await git("rev-parse", "HEAD")).stdout.trim();
+    // 工作区已偏离被审查的提交
+    await writeFile(join(history, "a.ts"), "export const version = 'workspace';\n");
+  });
+
+  const modes = (): [string, DiffMode][] => [
+    ["commit", { type: "commit", sha }],
+    ["range", { type: "range", from: sha, to: sha }],
+  ];
+
+  it("file_read 读取被审查提交中的文件，而非工作区", async () => {
+    for (const [, mode] of modes()) {
+      const out = await run("file_read", { path: "a.ts" }, { cwd: history, mode });
+      expect(out).toContain("reviewed");
+      expect(out).not.toContain("workspace");
+    }
+  });
+
+  it("file_read 拒绝仓库外路径", async () => {
+    const mode: DiffMode = { type: "commit", sha };
+    for (const path of ["../outside.txt", "/etc/passwd"]) {
+      expect(await run("file_read", { path }, { cwd: history, mode })).toMatch(/^Error:/);
+    }
+  });
+
+  it("code_search 在被审查提交中搜索，结果与工作区模式格式一致", async () => {
+    for (const [, mode] of modes()) {
+      const hit = await run("code_search", { query: "reviewed" }, { cwd: history, mode });
+      expect(hit).toBe("a.ts:1:export const version = 'reviewed';\n");
+      const miss = await run("code_search", { query: "workspace" }, { cwd: history, mode });
+      expect(miss).toBe("No matches found.");
+    }
   });
 });
